@@ -1,262 +1,52 @@
+---
+layout: null
+---
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Coding Cloud - Premium</title>
-
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
-
-:root {
-  --sky1: #e0f4ff;
-  --sky2: #bbf2c6;
-  --ground1: #6fdc83;
-  --ground2: #4fbf6a;
-  --text: #2c4c30;
-  --cloud-bg: rgba(255, 255, 255, 0.95);
-  --cloud-text: #333333;
-}
-
-body.night {
-  --sky1: #0b132b;
-  --sky2: #1c2541;
-  --ground1: #1c3d27;
-  --ground2: #112a1a;
-  --text: #e1f5fe;
-  --cloud-bg: rgba(30, 41, 59, 0.9);
-  --cloud-text: #ffffff;
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
-body {
-  font-family: 'Nunito', sans-serif;
-  height: 100vh;
-  overflow: hidden;
-  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
-  transition: background 1.5s ease;
-  perspective: 1000px; /* 3D 입체감 부여 */
-}
-
-/* 헤더 스타일 */
-.header {
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  top: 40px;
-  z-index: 10;
-  pointer-events: none;
-}
-.header h1 {
-  color: var(--text);
-  font-size: 3.5rem;
-  font-weight: 900;
-  text-shadow: 0 4px 8px rgba(0,0,0,0.05);
-  transition: color 1s;
-}
-.header p {
-  color: var(--text);
-  opacity: 0.8;
-  font-size: 1.1rem;
-  margin-top: 10px;
-  transition: color 1s;
-}
-
-/* 테마 토글 버튼 */
-.toggle {
-  position: absolute; right: 40px; top: 40px; width: 60px; height: 60px;
-  border-radius: 50%; border: none; font-size: 26px; cursor: pointer;
-  background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform 0.3s, background 0.3s;
-}
-.toggle:hover { transform: scale(1.1) rotate(15deg); }
-body.night .toggle { background: #1e293b; color: white; }
-
-/* 3D 월드 컨테이너 */
-.world {
-  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.1s ease-out; /* 마우스 무브 연동용 */
-}
-
-/* 잔디밭 바닥 */
-.ground {
-  position: absolute; bottom: -150px; left: -10%; width: 120%; height: 500px;
-  background: linear-gradient(135deg, var(--ground1), var(--ground2));
-  border-radius: 50% 50% 0 0;
-  box-shadow: 0 30px 100px rgba(0,0,0,0.2);
-  transition: background 1.5s;
-  z-index: 1;
-}
-
-/* 나무 (디테일 업그레이드) */
-.tree { position: absolute; width: 160px; height: 220px; z-index: 2; transition: bottom 0.5s; }
-.leaf { position: absolute; border-radius: 50%; transition: background 1.5s; }
-.back { width: 130px; height: 130px; background: #a7f0a0; top: 10px; left: 20px; opacity: 0.8; }
-.mid { width: 140px; height: 140px; background: #7fe07f; top: 0; left: 15px; }
-.front { width: 120px; height: 120px; background: #5fd35f; top: 20px; left: 35px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
-.trunk { position: absolute; width: 24px; height: 90px; background: #926438; left: 73px; bottom: 0; border-radius: 12px; }
-
-body.night .back { background: #224a34; }
-body.night .mid { background: #1b3d29; }
-body.night .front { background: #153020; }
-
-.t1 { left: 15%; bottom: 80px; transform: scale(0.85); }
-.t2 { left: 45%; bottom: 60px; transform: scale(1); }
-.t3 { right: 15%; bottom: 90px; transform: scale(0.95); }
-
-/* 구름 (글자 가림 현상 완벽 해결 및 애니메이션 추가) */
-.cloud {
-  position: absolute; width: 220px; height: 80px; background: var(--cloud-bg);
-  border-radius: 50px; cursor: pointer;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 1.5s, box-shadow 0.4s;
-  display: flex; align-items: center; justify-content: center;
-  z-index: 5;
-}
-.cloud span {
-  position: relative; z-index: 10; font-weight: 900; color: var(--cloud-text); font-size: 20px; letter-spacing: 1px; transition: color 1.5s;
-}
-.cloud:hover {
-  transform: scale(1.15) translateY(-5px);
-  box-shadow: 0 25px 45px rgba(0,0,0,0.2);
-}
-.cloud:before, .cloud:after { content: ""; position: absolute; background: var(--cloud-bg); border-radius: 50%; transition: background 1.5s; }
-.cloud:before { width: 90px; height: 90px; left: 25px; top: -40px; }
-.cloud:after { width: 110px; height: 110px; right: 25px; top: -50px; }
-
-/* 구름 개별 둥실둥실 애니메이션 (박자 다르게 조정) */
-@keyframes float1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-@keyframes float2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
-@keyframes float3 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
-
-.c1 { left: 12%; top: 25%; animation: float1 5s ease-in-out infinite; }
-.c2 { left: 42%; top: 20%; animation: float2 6s ease-in-out infinite; }
-.c3 { left: 72%; top: 28%; animation: float3 5.5s ease-in-out infinite; }
-.c4 { left: 22%; top: 50%; animation: float3 6.5s ease-in-out infinite; }
-.c5 { left: 52%; top: 53%; animation: float1 5.8s ease-in-out infinite; }
-.c6 { left: 78%; top: 48%; animation: float2 6.2s ease-in-out infinite; }
-
-/* 구름에서 떨어지는 코딩 비/눈 효과 스크립트용 스타일 */
-.drop {
-  position: absolute; color: #4fbf6a; font-size: 12px; font-weight: bold;
-  pointer-events: none; animation: fall 1.5s linear forwards; z-index: 3;
-}
-body.night .drop { color: #a7f0a0; }
-@keyframes fall {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(250px); opacity: 0; }
-}
-
-/* 밤하늘 별 */
-.star {
-  position: absolute; background: white; border-radius: 50%; pointer-events: none;
-  animation: twinkle 2s infinite ease-in-out; z-index: 0;
-}
-@keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>sonjhing — Portfolio 2026</title>
+    <meta name="description" content="sonjhing's creative portfolio 2026">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/style.css">
 </head>
-
 <body>
-<button class="toggle" id="toggle">🌙</button>
+    <!-- Ripple container -->
+    <div id="ripple-container"></div>
 
-<div class="header">
-  <h1>☁️ Coding Cloud Garden</h1>
-  <p>구름 위에 마우스를 가져가면 코딩 비가 내리고, 클릭하면 세계가 이동합니다.</p>
-</div>
+    <!-- Grain overlay -->
+    <div class="grain-overlay"></div>
 
-<div class="world" id="world">
-  <div class="ground"></div>
+    <!-- Main content -->
+    <main class="hero" id="hero">
+        <!-- Tangerine image -->
+        <div class="fruit-wrapper">
+            <img src="{{ site.baseurl }}/assets/images/tangerine.png" alt="" class="fruit-img">
+        </div>
 
-  <div class="tree t1"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
-  <div class="tree t2"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
-  <div class="tree t3"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
+        <!-- SONJHING letters -->
+        <div class="portfolio-text" id="portfolio-text">
+            <a href="{{ site.baseurl }}/pages/skills.html" class="letter" style="--c:#3B82F6;--i:0" data-tip="Skills">S</a>
+            <a href="{{ site.baseurl }}/pages/overview.html" class="letter" style="--c:#06B6D4;--i:1" data-tip="Overview">O</a>
+            <a href="{{ site.baseurl }}/pages/notes.html" class="letter" style="--c:#10B981;--i:2" data-tip="Notes">N</a>
+            <a href="{{ site.baseurl }}/pages/journey.html" class="letter" style="--c:#F59E0B;--i:3" data-tip="Journey">J</a>
+            <a href="{{ site.baseurl }}/pages/hobbies.html" class="letter" style="--c:#EC4899;--i:4" data-tip="Hobbies">H</a>
+            <a href="{{ site.baseurl }}/pages/info.html" class="letter" style="--c:#8B5CF6;--i:5" data-tip="Info">I</a>
+            <a href="{{ site.baseurl }}/pages/experience.html" class="letter" style="--c:#F59E0B;--i:6" data-tip="Experience">N</a>
+            <a href="{{ site.baseurl }}/pages/education.html" class="letter" style="--c:#EF4444;--i:7" data-tip="Education">G</a>
+        </div>
 
-  <div class="cloud c1" onclick="window.open('https://developer.mozilla.org/ko/docs/Web/HTML')"><span>HTML</span></div>
-  <div class="cloud c2" onclick="window.open('https://developer.mozilla.org/ko/docs/Web/CSS')"><span>CSS</span></div>
-  <div class="cloud c3" onclick="window.open('https://developer.mozilla.org/ko/docs/Web/JavaScript')"><span>JavaScript</span></div>
-  <div class="cloud c4" onclick="window.open('https://react.dev/')"><span>React</span></div>
-  <div class="cloud c5" onclick="window.open('https://nodejs.org/')"><span>Node.js</span></div>
-  <div class="cloud c6" onclick="window.open('https://www.w3schools.com/')"><span>Study</span></div>
-</div>
+        <!-- Labels -->
+        <div class="label label-fresh">FIGHTING 100%</div>
+        <div class="label label-refresh">안녕하세요!</div>
 
-<script>
-const toggle = document.getElementById("toggle");
-const world = document.getElementById("world");
+        <!-- Footer -->
+        <div class="footer-badge">2026 PORTFOLIO</div>
+    </main>
 
-// 1. 다크모드 & 라이트모드 전환 및 별 관리
-toggle.addEventListener("click", () => {
-  document.body.classList.toggle("night");
-  const isNight = document.body.classList.contains("night");
-  toggle.textContent = isNight ? "☀️" : "🌙";
-  
-  if (!isNight) {
-    // 낮으로 바뀌면 기존 별 모두 제거
-    document.querySelectorAll('.star').forEach(star => star.remove());
-  }
-});
-
-// 밤하늘 별 생성 루프
-setInterval(() => {
-  if (!document.body.classList.contains("night")) return;
-  
-  const star = document.createElement("div");
-  star.classList.add("star");
-  const size = Math.random() * 3 + 1;
-  star.style.width = `${size}px`;
-  star.style.height = `${size}px`;
-  star.style.left = Math.random() * 100 + "%";
-  star.style.top = Math.random() * 70 + "%"; // 주로 하늘 쪽에 생성
-  star.style.animationDelay = Math.random() * 2 + "s";
-  
-  document.body.appendChild(star);
-  setTimeout(() => star.remove(), 4000);
-}, 300);
-
-
-// 2. 구름 마우스 오버 시 코딩 비(Rain) 내리는 효과
-const clouds = document.querySelectorAll('.cloud');
-const codeCharacters = ['0', '1', '<>', '{}', ';', '++', '===', 'JS', 'HTML', 'CSS'];
-
-clouds.forEach(cloud => {
-  let rainInterval;
-  
-  cloud.addEventListener('mouseenter', () => {
-    rainInterval = setInterval(() => {
-      const drop = document.createElement('div');
-      drop.classList.add('drop');
-      
-      // 구름의 현재 위치 기준으로 랜덤하게 비 낙하위치 선정
-      const rect = cloud.getBoundingClientRect();
-      const randomLeft = rect.left + Math.random() * rect.width;
-      const startTop = rect.bottom - 20;
-      
-      drop.style.left = `${randomLeft}px`;
-      drop.style.top = `${startTop}px`;
-      drop.textContent = codeCharacters[Math.floor(Math.random() * codeCharacters.length)];
-      
-      document.body.appendChild(drop);
-      
-      // 애니메이션 종료 후 요소 제거
-      setTimeout(() => drop.remove(), 1500);
-    }, 80);
-  });
-  
-  cloud.addEventListener('mouseleave', () => {
-    clearInterval(rainInterval);
-  });
-});
-
-
-// 3. 마우스 움직임에 반응하는 마우스 3D 페러랙스 효과
-window.addEventListener('mousemove', (e) => {
-  const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
-  const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
-  world.style.transform = `translateX(-50%) rotateY(${-xAxis}deg) rotateX(${yAxis}deg)`;
-});
-</script>
+    <script src="{{ site.baseurl }}/assets/js/main.js"></script>
 </body>
 </html>
