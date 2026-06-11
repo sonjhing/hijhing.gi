@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }} — Developer Docs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        :root {
+            --docs-bg: #050a15;
+            --docs-sidebar: #081225;
+            --docs-accent: #3b82f6;
+            --docs-text: #e2e8f0;
+            --docs-code-bg: #0f172a;
+        }
+
+        body.docs-theme {
+            background: var(--docs-bg);
+            color: var(--docs-text);
+            overflow-y: auto;
+            cursor: default;
+        }
+
+        /* Hero Header */
+        .docs-hero {
+            height: 60vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1e3a8a 0%, var(--docs-bg) 70%);
+            position: relative;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+            overflow: hidden;
+        }
+
+        .docs-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        .hero-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(5rem, 15vw, 12rem);
+            font-weight: 700;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--docs-accent);
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 2;
+            animation: glow-pulse 3s infinite alternate;
+        }
+
+        .hero-title span {
+            color: var(--docs-accent);
+            -webkit-text-stroke: 0;
+            text-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+        }
+
+        @keyframes glow-pulse {
+            from { filter: drop-shadow(0 0 5px rgba(59,130,246,0.2)); }
+            to { filter: drop-shadow(0 0 20px rgba(59,130,246,0.6)); }
+        }
+
+        /* Layout Container */
+        .docs-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .docs-sidebar {
+            background: var(--docs-sidebar);
+            padding: 3rem 2rem;
+            border-right: 1px solid rgba(59, 130, 246, 0.1);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--docs-accent);
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+
+        .toc-list { list-style: none; }
+        .toc-item { margin-bottom: 1rem; }
+        .toc-link {
+            color: var(--docs-text);
+            text-decoration: none;
+            font-size: 0.95rem;
+            opacity: 0.7;
+            transition: all 0.3s;
+            display: block;
+        }
+        .toc-link:hover { opacity: 1; color: var(--docs-accent); transform: translateX(5px); }
+
+        /* Content */
+        .docs-content {
+            padding: 4rem 5rem;
+            line-height: 1.8;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .docs-content h1, .docs-content h2, .docs-content h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--docs-accent);
+            margin-top: 3.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .docs-content p { margin-bottom: 1.5rem; opacity: 0.9; }
+
+        .docs-content ul, .docs-content ol {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .docs-content li { margin-bottom: 0.5rem; }
+
+        .docs-content blockquote {
+            border-left: 4px solid var(--docs-accent);
+            background: rgba(59, 130, 246, 0.05);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            font-style: italic;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .docs-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+
+        .docs-content th, .docs-content td {
+            padding: 1rem;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+            text-align: left;
+        }
+
+        .docs-content th { background: rgba(59, 130, 246, 0.1); color: var(--docs-accent); }
+
+        /* Code Blocks */
+        pre {
+            background: var(--docs-code-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            overflow-x: auto;
+            margin: 2rem 0;
+            font-family: 'JetBrains Mono', monospace;
+            position: relative;
+        }
+
+        code { font-family: 'JetBrains Mono', monospace; color: #60a5fa; }
+        
+        pre::before {
+            content: "PYTHON";
+            position: absolute;
+            top: 0.5rem; right: 1rem;
+            font-size: 0.6rem;
+            letter-spacing: 0.1em;
+            color: rgba(59, 130, 246, 0.4);
+        }
+
+        .back-home {
+            position: fixed; top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--docs-accent);
+            text-decoration: none;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            background: rgba(59, 130, 246, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            transition: all 0.3s;
+        }
+        .back-home:hover { background: var(--docs-accent); color: white; }
+
+        @media (max-width: 1024px) {
+            .docs-container { grid-template-columns: 1fr; }
+            .docs-sidebar { display: none; }
+            .docs-content { padding: 3rem 2rem; }
+        }
+    </style>
+</head>
+<body class="docs-theme">
+    <a href="index.html" class="back-home">← TERMINAL</a>
+
+    <header class="docs-hero">
+        <div class="hero-title">PY<span>THON</span></div>
+    </header>
+
+    <div class="docs-container">
+        <aside class="docs-sidebar">
+            <div class="sidebar-title">Documentation</div>
+            <nav>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#introduction" class="toc-link">01. Introduction</a></li>
+                    <li class="toc-item"><a href="#syntax" class="toc-link">02. Core Syntax</a></li>
+                    <li class="toc-item"><a href="#functions" class="toc-link">03. Functions</a></li>
+                    <li class="toc-item"><a href="#automation" class="toc-link">04. Automation</a></li>
+                    <li class="toc-item"><a href="#conclusion" class="toc-link">05. Conclusion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <article class="docs-content">
+            {{ content }}
+        </article>
+    </div>
+</body>
+</html>

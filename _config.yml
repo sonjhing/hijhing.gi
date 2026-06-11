@@ -1,0 +1,11 @@
+url: https://sonjhing.github.io
+baseurl: ""
+title: sonjhing Portfolio
+description: "Give Shape To Invisible Messages"
+
+exclude:
+  - README.md
+  - LICENSE
+  - node_modules
+  - Gemfile.lock
+  - vendor
