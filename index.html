@@ -251,12 +251,6 @@ clouds.forEach(cloud => {
 });
 
 
-// 3. 마우스 움직임에 반응하는 마우스 3D 페러랙스 효과
-window.addEventListener('mousemove', (e) => {
-  const xAxis = (window.innerWidth / 2 - e.pageX) / 45;
-  const yAxis = (window.innerHeight / 2 - e.pageY) / 45;
-  world.style.transform = `translateX(-50%) rotateY(${-xAxis}deg) rotateX(${yAxis}deg)`;
-});
 </script>
 </body>
 </html>
