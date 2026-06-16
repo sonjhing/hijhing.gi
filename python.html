@@ -233,7 +233,7 @@ let originalDescHTML = "";
 let originalCodeHTML = "";
 
 // 🌟 [설명칸] ai.md 파일 가져오기
-fetch('ai.md')
+fetch('s2py.md')
   .then(response => {
     if (!response.ok) throw new Error('ai.md 파일을 찾을 수 없습니다.');
     return response.text();
@@ -249,7 +249,7 @@ fetch('ai.md')
   });
 
 // 🌟 [코딩칸] ai2.md 파일 가져오기
-fetch('ai2.md')
+fetch('s2py.md')
   .then(response => {
     if (!response.ok) throw new Error('ai2.md 파일을 찾을 수 없습니다.');
     return response.text();
