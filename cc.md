@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coding Cloud Garden - AI Lab</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap');
+
+:root {
+  --sky1: #e0f4ff;
+  --sky2: #bbf2c6;
+  --text: #2c4c30;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --accent: #4fbf6a;
+  --input-bg: #ffffff;
+  --input-text: #333333;
+  --tab-inactive: rgba(0, 0, 0, 0.05);
+}
+
+body.night {
+  --sky1: #0b132b;
+  --sky2: #1c2541;
+  --text: #e1f5fe;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --accent: #a7f0a0;
+  --input-bg: #1e293b;
+  --input-text: #ffffff;
+  --tab-inactive: rgba(255, 255, 255, 0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', 'Nunito', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  background-attachment: fixed;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  transition: background 1.5s ease, color 1s;
+}
+
+/* 내비게이션 바 */
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: 20px;
+}
+
+/* 홈 버튼 */
+.home-btn {
+  padding: 12px 24px;
+  border-radius: 50px;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.home-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+/* 찾기 상자 */
+.search-box {
+  display: flex;
+  gap: 10px;
+  background: var(--card-bg);
+  padding: 6px 6px 6px 16px;
+  border-radius: 50px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  align-items: center;
+  width: 350px;
+}
+.search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.95rem;
+  color: var(--input-text);
+  width: 100%;
+}
+.search-box button {
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+body.night .search-box button { color: #112a1a; }
+.search-box button:hover { opacity: 0.9; }
+
+/* 탭 메뉴 스타일 */
+.tab-container {
+  display: flex;
+  width: 100%;
+  max-width: 800px;
+  margin-bottom: -2px;
+  gap: 5px;
+  z-index: 2;
+}
+.tab-button {
+  padding: 12px 30px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 16px 16px 0 0;
+  background: var(--tab-inactive);
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.3s;
+}
+.tab-button.active {
+  background: var(--card-bg);
+  opacity: 1;
+  box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+}
+
+/* 콘텐츠 카드 디자인 */
+.content-card {
+  width: 100%;
+  max-width: 800px;
+  background: var(--card-bg);
+  border-radius: 0 24px 24px 24px;
+  padding: 40px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  line-height: 1.8;
+  min-height: 400px;
+}
+
+/* 탭 내부 페이지 전환 제어 */
+.tab-content {
+  display: none;
+}
+.tab-content.active {
+  display: block;
+}
+
+/* 마크다운 공통 렌더링 스타일 스타일 */
+.content-card h1 { font-size: 2.3rem; font-weight: 900; margin-bottom: 20px; border-bottom: 3px solid var(--accent); padding-bottom: 10px; }
+.content-card h2 { font-size: 1.6rem; margin-top: 30px; margin-bottom: 15px; color: var(--accent); }
+.content-card h3 { font-size: 1.2rem; margin-top: 20px; margin-bottom: 10px; }
+.content-card p { margin-bottom: 15px; font-size: 1.05rem; opacity: 0.9; }
+.content-card ul, .content-card ol { margin-left: 25px; margin-bottom: 20px; }
+.content-card li { margin-bottom: 5px; }
+.content-card blockquote { border-left: 4px solid var(--accent); padding-left: 15px; color: gray; margin: 15px 0; }
+
+/* 💻 마크다운 내부의 코드 블록 스타일 가독성 업그레이드 */
+.content-card pre {
+  background: var(--input-bg);
+  color: var(--input-text);
+  padding: 15px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 15px 0;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.content-card code {
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+body.night .content-card code { background: rgba(255,255,255,0.1); }
+
+/* 찾기 하이라이트 */
+.highlight {
+  background-color: #ffeb3b;
+  color: #000000;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="index.html" class="home-btn">🌳 고 가든</a>
+  
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="현재 탭에서 단어 검색..." onkeypress="if(event.key === 'Enter') handleSearch()">
+    <button onclick="handleSearch()">찾기</button>
+  </div>
+</div>
+
+<div class="tab-container">
+  <button class="tab-button active" onclick="switchTab('descTab', this)">📝 설명</button>
+  <button class="tab-button" onclick="switchTab('codeTab', this)">💻 코딩</button>
+</div>
+
+<div class="content-card">
+  
+  <div id="descTab" class="tab-content active">
+    <p style="text-align:center; opacity:0.5; padding-top: 50px;">ai.md 문서를 불러오는 중입니다... ☁></p>
+  </div>
+  
+  <div id="codeTab" class="tab-content">
+    <p style="text-align:center; opacity:0.5; padding-top: 50px;">ai2.md 문서를 불러오는 중입니다... ☁></p>
+  </div>
+
+</div>
+
+<script>
+// 밤 모드 감지 테마 세팅
+if (localStorage.getItem('theme') === 'night' || window.location.search.includes('theme=night')) {
+  document.body.classList.add('night');
+}
+
+// 각 탭의 원본 HTML을 저장할 변수 (검색 초기화용)
+let originalDescHTML = "";
+let originalCodeHTML = "";
+
+// 🌟 [설명칸] ai.md 파일 가져오기
+fetch('crun.md')
+  .then(response => {
+    if (!response.ok) throw new Error('ai.md 파일을 찾을 수 없습니다.');
+    return response.text();
+  })
+  .then(markdownText => {
+    const htmlContent = parseMarkdown(markdownText);
+    const container = document.getElementById('descTab');
+    container.innerHTML = htmlContent;
+    originalDescHTML = container.innerHTML;
+  })
+  .catch(err => {
+    document.getElementById('descTab').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}</p>`;
+  });
+
+// 🌟 [코딩칸] ai2.md 파일 가져오기
+fetch('ccoo.md')
+  .then(response => {
+    if (!response.ok) throw new Error('ai2.md 파일을 찾을 수 없습니다.');
+    return response.text();
+  })
+  .then(markdownText => {
+    const htmlContent = parseMarkdown(markdownText);
+    const container = document.getElementById('codeTab');
+    container.innerHTML = htmlContent;
+    originalCodeHTML = container.innerHTML;
+  })
+  .catch(err => {
+    document.getElementById('codeTab').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}<br>ai2.md 파일이 ai.html과 같은 폴더에 있는지 확인해 주세요.</p>`;
+  });
+
+// 마크다운 파서 (코드 블록 ``` 대응 추가)
+function parseMarkdown(md) {
+  let html = md;
+  
+  // 코드 블록 변환 (```code```)
+  html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
+  
+  // 제목 및 인용구 변환
+  html = html.replace(/^### (.*$)/gim, '### $1');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
+  html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+  
+  // 줄바꿈 p태그 감싸기
+  html = html.split('\n').map(line => {
+    if (!line.trim()) return '';
+    if (line.match(/<h|<block|<ul|<ol|<li|<pre|<code/)) return line;
+    return `<p>${line}</p>`;
+  }).join('\n');
+  
+  return html;
+}
+
+// 🔀 탭 전환 함수
+function switchTab(tabId, buttonElement) {
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+  
+  document.getElementById(tabId).classList.add('active');
+  buttonElement.classList.add('active');
+  
+  // 탭 전환 시 검색창과 하이라이트 내용 초기화
+  document.getElementById('searchInput').value = "";
+  document.getElementById('descTab').innerHTML = originalDescHTML;
+  document.getElementById('codeTab').innerHTML = originalCodeHTML;
+}
+
+// 🔍 단어 찾기 기능 (현재 활성화된 탭 기준 검색)
+function handleSearch() {
+  const input = document.getElementById('searchInput').value.trim();
+  const activeTab = document.querySelector('.tab-content.active');
+  
+  // 현재 어떤 탭이 켜져 있느냐에 따라 백업 원본 선택
+  const isDesc = activeTab.id === 'descTab';
+  const originalHTML = isDesc ? originalDescHTML : originalCodeHTML;
+  
+  if (!input) {
+    activeTab.innerHTML = originalHTML;
+    return;
+  }
+  
+  activeTab.innerHTML = originalHTML;
+  const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(?<!<[^>]*)${escapedInput}`, 'gi');
+  
+  if (!regex.test(activeTab.innerText)) {
+    alert("현재 탭 본문에 찾는 단어가 없습니다! 🔍");
+    return;
+  }
+  
+  activeTab.innerHTML = activeTab.innerHTML.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+}
+</script>
+
+</body>
+</html>
