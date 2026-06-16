@@ -264,26 +264,35 @@ fetch('ccoo.md')
     document.getElementById('codeTab').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}<br>ai2.md 파일이 ai.html과 같은 폴더에 있는지 확인해 주세요.</p>`;
   });
 
-// 마크다운 파서 (코드 블록 ``` 대응 추가)
+// 마크다운 파서 (코드 블록 안의 주석 보호 추가)
 function parseMarkdown(md) {
   let html = md;
   
-  // 코드 블록 변환 (```code```)
-  html = html.replace(/```([\s\S]*?)```/gm, '<pre><code>$1</code></pre>');
+  // 1. 코드 블록 보호
+  const codeBlocks = [];
+  html = html.replace(/```(?:python|c|js|html|css|bash)?\n?([\s\S]*?)```/gm, function(match, p1) {
+    codeBlocks.push('<pre><code>' + p1 + '</code></pre>');
+    return '__CODE_BLOCK_' + (codeBlocks.length - 1) + '__';
+  });
   
-  // 제목 및 인용구 변환
-  html = html.replace(/^### (.*$)/gim, '### $1');
+  // 2. 제목 및 인용구 변환
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
   html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
   html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
   
-  // 줄바꿈 p태그 감싸기
+  // 3. 줄바꿈 p태그 감싸기
   html = html.split('\n').map(line => {
     if (!line.trim()) return '';
-    if (line.match(/<h|<block|<ul|<ol|<li|<pre|<code/)) return line;
-    return `<p>${line}</p>`;
+    if (line.match(/<h|<block|<ul|<ol|<li|<pre|<code|__CODE_BLOCK_/)) return line;
+    return '<p>' + line + '</p>';
   }).join('\n');
+  
+  // 4. 보호된 코드 블록 복원
+  codeBlocks.forEach((block, index) => {
+    html = html.replace('__CODE_BLOCK_' + index + '__', block);
+  });
   
   return html;
 }
