@@ -245,6 +245,7 @@ body.night .content-card code { background: rgba(255,255,255,0.1); }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 // 밤 모드 감지 테마 세팅
 if (localStorage.getItem('theme') === 'night' || window.location.search.includes('theme=night')) {
@@ -261,59 +262,29 @@ fetch('s3py.md')
     return response.text();
   })
   .then(markdownText => {
-    const htmlContent = parseMarkdown(markdownText);
+    // 1. 완벽한 마크다운 파싱을 위해 marked.js 공식 라이브러리 사용
+    const htmlContent = marked.parse(markdownText);
+    
+    // 2. 파싱된 HTML을 임시 DOM에 넣어서 h1 태그에 ID 부여 (사이드바 연동)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    let h1Count = 1;
+    tempDiv.querySelectorAll('h1').forEach(h1 => {
+      if (h1Count <= 7) {
+        h1.id = 'section-' + h1Count;
+        h1Count++;
+      }
+    });
+    
+    // 3. 변환된 최종 HTML을 화면에 표시
     const container = document.getElementById('mainContent');
-    container.innerHTML = htmlContent;
+    container.innerHTML = tempDiv.innerHTML;
     originalHTML = container.innerHTML;
   })
   .catch(err => {
     document.getElementById('mainContent').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}</p>`;
   });
-
-// 마크다운 파서 (코드 블록 안의 주석 보호 및 h1 태그 ID 자동 부여)
-function parseMarkdown(md) {
-  let html = md;
-  
-  // 1. 코드 블록 보호
-  const codeBlocks = [];
-  html = html.replace(/```(?:python|c|js|html|css|bash)?\n?([\s\S]*?)```/gm, function(match, p1) {
-    codeBlocks.push('<pre><code>' + p1 + '</code></pre>');
-    return '__CODE_BLOCK_' + (codeBlocks.length - 1) + '__';
-  });
-  
-  // 2. 제목 및 인용구 변환
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  
-  // h1 태그 변환 시 사이드바 연동을 위한 id="section-X" 순차적 부여
-  let h1Count = 1;
-  html = html.replace(/^# (.*$)/gim, function(match, p1) {
-    if (h1Count <= 7) {
-      const id = 'section-' + h1Count;
-      h1Count++;
-      return '<h1 id="' + id + '">' + p1 + '</h1>';
-    } else {
-      return '<h1>' + p1 + '</h1>';
-    }
-  });
-
-  html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
-  html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
-  
-  // 3. 줄바꿈 p태그 감싸기
-  html = html.split('\n').map(line => {
-    if (!line.trim()) return '';
-    if (line.match(/<h|<block|<ul|<ol|<li|<pre|<code|__CODE_BLOCK_/)) return line;
-    return '<p>' + line + '</p>';
-  }).join('\n');
-  
-  // 4. 보호된 코드 블록 복원
-  codeBlocks.forEach((block, index) => {
-    html = html.replace('__CODE_BLOCK_' + index + '__', block);
-  });
-  
-  return html;
-}
 
 // 🔍 단어 찾기 기능
 function handleSearch() {

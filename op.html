@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오징어 다리 룰렛</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap');
+
+:root {
+  --sky1: #e0f4ff;
+  --sky2: #bbf2c6;
+  --text: #2c4c30;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --accent: #4fbf6a;
+  --squid: #ff6b6b;
+  --squid-dark: #ee5253;
+}
+
+body.night {
+  --sky1: #0b132b;
+  --sky2: #1c2541;
+  --text: #e1f5fe;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --accent: #a7f0a0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', 'Nunito', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  overflow: hidden;
+  transition: background 1.5s ease, color 1s;
+}
+
+/* 네비게이션 */
+.nav-bar {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 40px;
+}
+.home-btn {
+  padding: 12px 24px;
+  border-radius: 50px;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  text-decoration: none;
+  transition: transform 0.3s;
+}
+.home-btn:hover { transform: translateY(-3px); }
+
+/* 게임 타이틀 */
+h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+  text-align: center;
+}
+p.subtitle {
+  font-size: 1.1rem;
+  margin-bottom: 50px;
+  opacity: 0.8;
+  text-align: center;
+}
+
+/* 게임 영역 */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-top: 50px;
+}
+
+/* 오징어 머리 (대왕 크기) */
+.squid-head {
+  width: 800px;
+  height: 650px;
+  background: linear-gradient(135deg, var(--squid), var(--squid-dark));
+  border-radius: 50% 50% 40% 40%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+  z-index: 10;
+  transition: transform 0.3s, background 0.3s;
+}
+
+/* 뾰족한 오징어 귀(지느러미) 확대 */
+.squid-head::before, .squid-head::after {
+  content: "";
+  position: absolute;
+  top: 50px;
+  width: 0;
+  height: 0;
+  border-bottom: 120px solid var(--squid);
+}
+.squid-head::before {
+  left: -60px;
+  border-left: 70px solid transparent;
+  transform: rotate(-20deg);
+}
+.squid-head::after {
+  right: -60px;
+  border-right: 70px solid transparent;
+  transform: rotate(20deg);
+}
+
+/* 오징어 표정 (왕건이) */
+.face {
+  font-size: 4.5rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  z-index: 15;
+  transition: all 0.2s;
+}
+
+/* 다리 영역 */
+.legs-container {
+  display: flex;
+  gap: 10px;
+  margin-top: -30px;
+  z-index: 5;
+}
+
+/* 개별 다리 (더 굵고 길게) */
+.leg {
+  width: 20px;
+  height: 160px;
+  background: var(--squid-dark);
+  border-radius: 0 0 12px 12px;
+  cursor: pointer;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+.leg:hover {
+  transform: scaleY(1.1) translateY(5px);
+  filter: brightness(1.1);
+}
+
+/* 다리 떼어짐 애니메이션 */
+.leg.pulled {
+  transform: translateY(150px) rotate(45deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 폭발 애니메이션 (게임 오버) */
+@keyframes shake {
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+@keyframes explode {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.5); filter: brightness(2) contrast(2); background: #ff0000; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+.shake {
+  animation: shake 0.5s;
+  animation-iteration-count: infinite;
+}
+
+.explode {
+  animation: explode 0.5s forwards;
+}
+
+.bg-flash {
+  animation: bgFlash 0.5s forwards;
+}
+
+@keyframes bgFlash {
+  0% { background: #ff0000; }
+  100% { background: #1a0000; }
+}
+
+/* 오버레이 메시지 */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s;
+}
+.overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+.overlay h2 {
+  font-size: 4rem;
+  color: white;
+  margin-bottom: 20px;
+}
+.restart-btn {
+  padding: 15px 40px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border-radius: 50px;
+  border: none;
+  background: #ff6b6b;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 10px 20px rgba(255,107,107,0.3);
+  transition: transform 0.2s;
+}
+.restart-btn:hover {
+  transform: scale(1.1);
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="index.html" class="home-btn" target="_self">🌳 메인으로</a>
+</div>
+
+<h1>🦑 오징어 다리 룰렛</h1>
+<p class="subtitle">10개의 다리 중 1개는 폭탄! 다리를 클릭해서 무사히 떼어내세요.</p>
+
+<div class="game-container" id="gameArea">
+  <div class="squid-head" id="squid">
+    <div class="face" id="face">( ⊙_⊙ )</div>
+  </div>
+  <div class="legs-container" id="legs">
+    <!-- 자바스크립트로 다리 10개 생성 -->
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <h2 id="resultMsg">GAME OVER</h2>
+  <button class="restart-btn" onclick="initGame()">다시 하기</button>
+</div>
+
+<script>
+// 테마 감지
+if (localStorage.getItem('theme') === 'night' || window.location.search.includes('theme=night')) {
+  document.body.classList.add('night');
+}
+
+const legsContainer = document.getElementById('legs');
+const face = document.getElementById('face');
+const squid = document.getElementById('squid');
+const overlay = document.getElementById('overlay');
+const resultMsg = document.getElementById('resultMsg');
+
+let bombIndex = -1;
+let pulledCount = 0;
+let gameOver = false;
+
+// 게임 초기화
+function initGame() {
+  legsContainer.innerHTML = '';
+  face.innerText = '( ⊙_⊙ )';
+  squid.className = 'squid-head'; // 애니메이션 클래스 초기화
+  document.body.classList.remove('bg-flash');
+  overlay.classList.remove('active');
+  
+  bombIndex = Math.floor(Math.random() * 10);
+  pulledCount = 0;
+  gameOver = false;
+  
+  for (let i = 0; i < 10; i++) {
+    const leg = document.createElement('div');
+    leg.className = 'leg';
+    leg.onclick = () => pullLeg(leg, i);
+    legsContainer.appendChild(leg);
+  }
+}
+
+// 다리 떼기 함수
+function pullLeg(legElement, index) {
+  if (gameOver) return;
+  if (legElement.classList.contains('pulled')) return; // 이미 뗀 다리
+  
+  // 꽝 (폭탄)
+  if (index === bombIndex) {
+    gameOver = true;
+    legElement.style.background = '#ff0000';
+    
+    // 오징어 충격 표정 (이모지 대신 텍스트로 크기 통일)
+    face.innerText = '( X_X )';
+    squid.classList.add('shake');
+    
+    setTimeout(() => {
+      // 폭발
+      squid.classList.replace('shake', 'explode');
+      document.body.classList.add('bg-flash');
+      
+      setTimeout(() => {
+        resultMsg.innerText = "💥 펑! 게임 오버 💥";
+        resultMsg.style.color = "#ff4d4d";
+        overlay.classList.add('active');
+      }, 500);
+    }, 800); // 0.8초간 떨다가 터짐
+    
+  } else {
+    // 안전한 다리
+    legElement.classList.add('pulled');
+    pulledCount++;
+    
+    // 표정 변화 (얼굴 크기 동일하게 텍스트로만)
+    const safeFaces = ['( >_< )', '( ㅠ_ㅠ )', '( ºΔº )', '( ;_;)'];
+    face.innerText = safeFaces[Math.floor(Math.random() * safeFaces.length)];
+    
+    // 몸통 살짝 흔들림 (원치 않으시면 scale을 빼셔도 됩니다)
+    squid.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+      squid.style.transform = 'scale(1)';
+      if (!gameOver) face.innerText = '( ⊙_⊙ )'; // 평온 상태로 복귀
+    }, 300);
+    
+    // 성공 판정 (9개 다 떼면 승리)
+    if (pulledCount === 9) {
+      gameOver = true;
+      setTimeout(() => {
+        face.innerText = '( ^o^ )';
+        resultMsg.innerText = "🎉 생존 성공! 🎉";
+        resultMsg.style.color = "#4fbf6a";
+        overlay.classList.add('active');
+      }, 500);
+    }
+  }
+}
+
+// 시작
+initGame();
+</script>
+
+</body>
+</html>
