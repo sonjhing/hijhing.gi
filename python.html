@@ -32,6 +32,10 @@ body.night {
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+html {
+  scroll-behavior: smooth; /* 목차 클릭 시 부드럽게 스크롤 */
+}
+
 body {
   font-family: 'Noto Sans KR', 'Nunito', sans-serif;
   min-height: 100vh;
@@ -45,13 +49,13 @@ body {
   transition: background 1.5s ease, color 1s;
 }
 
-/* 내비게이션 바 */
+/* 상단 내비게이션 바 */
 .nav-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  max-width: 800px;
+  max-width: 1000px;
   margin-bottom: 20px;
 }
 
@@ -109,56 +113,70 @@ body {
 body.night .search-box button { color: #112a1a; }
 .search-box button:hover { opacity: 0.9; }
 
-/* 탭 메뉴 스타일 */
-.tab-container {
+/* 메인 레이아웃 래퍼 (사이드바 + 콘텐츠) */
+.main-wrapper {
   display: flex;
   width: 100%;
-  max-width: 800px;
-  margin-bottom: -2px;
-  gap: 5px;
-  z-index: 2;
+  max-width: 1000px;
+  gap: 30px;
+  align-items: flex-start;
 }
-.tab-button {
-  padding: 12px 30px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 16px 16px 0 0;
-  background: var(--tab-inactive);
-  color: var(--text);
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.3s;
-}
-.tab-button.active {
+
+/* 🌟 고정된 사이드바(목차) 스타일 */
+.sidebar {
+  position: sticky;
+  top: 40px;
+  width: 200px;
+  flex-shrink: 0;
   background: var(--card-bg);
-  opacity: 1;
-  box-shadow: 0 -5px 15px rgba(0,0,0,0.02);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+.sidebar-title {
+  font-weight: 900;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  text-align: center;
+  color: var(--accent);
+}
+.sidebar a {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: var(--tab-inactive);
+  transition: all 0.3s;
+  font-size: 0.95rem;
+}
+.sidebar a:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateX(5px);
+}
+body.night .sidebar a:hover { color: #112a1a; }
 
 /* 콘텐츠 카드 디자인 */
 .content-card {
-  width: 100%;
-  max-width: 800px;
+  flex-grow: 1;
   background: var(--card-bg);
-  border-radius: 0 24px 24px 24px;
+  border-radius: 24px;
   padding: 40px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.1);
   backdrop-filter: blur(10px);
   line-height: 1.8;
-  min-height: 400px;
+  min-height: 600px;
+  min-width: 0; /* Flex 버그 방지 */
 }
 
-/* 탭 내부 페이지 전환 제어 */
-.tab-content {
-  display: none;
-}
-.tab-content.active {
-  display: block;
-}
-
-/* 마크다운 공통 렌더링 스타일 스타일 */
-.content-card h1 { font-size: 2.3rem; font-weight: 900; margin-bottom: 20px; border-bottom: 3px solid var(--accent); padding-bottom: 10px; }
+/* 마크다운 공통 렌더링 스타일 */
+.content-card h1 { font-size: 2.3rem; font-weight: 900; margin-bottom: 20px; border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-top: 40px; }
+.content-card h1:first-child { margin-top: 0; }
 .content-card h2 { font-size: 1.6rem; margin-top: 30px; margin-bottom: 15px; color: var(--accent); }
 .content-card h3 { font-size: 1.2rem; margin-top: 20px; margin-bottom: 10px; }
 .content-card p { margin-bottom: 15px; font-size: 1.05rem; opacity: 0.9; }
@@ -166,7 +184,7 @@ body.night .search-box button { color: #112a1a; }
 .content-card li { margin-bottom: 5px; }
 .content-card blockquote { border-left: 4px solid var(--accent); padding-left: 15px; color: gray; margin: 15px 0; }
 
-/* 💻 마크다운 내부의 코드 블록 스타일 가독성 업그레이드 */
+/* 💻 마크다운 내부의 코드 블록 스타일 */
 .content-card pre {
   background: var(--input-bg);
   color: var(--input-text);
@@ -197,29 +215,34 @@ body.night .content-card code { background: rgba(255,255,255,0.1); }
 <body>
 
 <div class="nav-bar">
-  <a href="index.html" class="home-btn">🌳 고 가든</a>
+  <a href="index.html" class="home-btn" target="_self">🌳 고 가든</a>
   
   <div class="search-box">
-    <input type="text" id="searchInput" placeholder="현재 탭에서 단어 검색..." onkeypress="if(event.key === 'Enter') handleSearch()">
+    <input type="text" id="searchInput" placeholder="본문 단어 검색..." onkeypress="if(event.key === 'Enter') handleSearch()">
     <button onclick="handleSearch()">찾기</button>
   </div>
 </div>
 
-<div class="tab-container">
-  <button class="tab-button active" onclick="switchTab('descTab', this)">📝 설명</button>
-  <button class="tab-button" onclick="switchTab('codeTab', this)">💻 코딩</button>
-</div>
+<div class="main-wrapper">
+  <!-- 🌟 사이드바 목차 영역 -->
+  <nav class="sidebar">
+    <div class="sidebar-title">목차 (TOC)</div>
+    <!-- 임시로 Section 1 ~ 7로 지정 -->
+    <a href="#section-1">Section 1</a>
+    <a href="#section-2">Section 2</a>
+    <a href="#section-3">Section 3</a>
+    <a href="#section-4">Section 4</a>
+    <a href="#section-5">Section 5</a>
+    <a href="#section-6">Section 6</a>
+    <a href="#section-7">Section 7</a>
+  </nav>
 
-<div class="content-card">
-  
-  <div id="descTab" class="tab-content active">
-    <p style="text-align:center; opacity:0.5; padding-top: 50px;">ai.md 문서를 불러오는 중입니다... ☁></p>
+  <!-- 🌟 통합된 콘텐츠 영역 -->
+  <div class="content-card">
+    <div id="mainContent">
+      <p style="text-align:center; opacity:0.5; padding-top: 50px;">s2py.md 문서를 불러오는 중입니다... ☁️</p>
+    </div>
   </div>
-  
-  <div id="codeTab" class="tab-content">
-    <p style="text-align:center; opacity:0.5; padding-top: 50px;">ai2.md 문서를 불러오는 중입니다... ☁></p>
-  </div>
-
 </div>
 
 <script>
@@ -228,43 +251,26 @@ if (localStorage.getItem('theme') === 'night' || window.location.search.includes
   document.body.classList.add('night');
 }
 
-// 각 탭의 원본 HTML을 저장할 변수 (검색 초기화용)
-let originalDescHTML = "";
-let originalCodeHTML = "";
+// 원본 HTML을 저장할 변수 (검색 초기화용)
+let originalHTML = "";
 
-// 🌟 [설명칸] ai.md 파일 가져오기
+// 🌟 s2py.md 파일 단일로 가져오기 (설명+코드 통합)
 fetch('s2py.md')
   .then(response => {
-    if (!response.ok) throw new Error('ai.md 파일을 찾을 수 없습니다.');
+    if (!response.ok) throw new Error('s2py.md 파일을 찾을 수 없습니다.');
     return response.text();
   })
   .then(markdownText => {
     const htmlContent = parseMarkdown(markdownText);
-    const container = document.getElementById('descTab');
+    const container = document.getElementById('mainContent');
     container.innerHTML = htmlContent;
-    originalDescHTML = container.innerHTML;
+    originalHTML = container.innerHTML;
   })
   .catch(err => {
-    document.getElementById('descTab').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}</p>`;
+    document.getElementById('mainContent').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}</p>`;
   });
 
-// 🌟 [코딩칸] ai2.md 파일 가져오기
-fetch('s2py.md')
-  .then(response => {
-    if (!response.ok) throw new Error('ai2.md 파일을 찾을 수 없습니다.');
-    return response.text();
-  })
-  .then(markdownText => {
-    const htmlContent = parseMarkdown(markdownText);
-    const container = document.getElementById('codeTab');
-    container.innerHTML = htmlContent;
-    originalCodeHTML = container.innerHTML;
-  })
-  .catch(err => {
-    document.getElementById('codeTab').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}<br>ai2.md 파일이 ai.html과 같은 폴더에 있는지 확인해 주세요.</p>`;
-  });
-
-// 마크다운 파서 (코드 블록 안의 주석 보호 추가)
+// 마크다운 파서 (코드 블록 안의 주석 보호 및 h1 태그 ID 자동 부여)
 function parseMarkdown(md) {
   let html = md;
   
@@ -278,7 +284,19 @@ function parseMarkdown(md) {
   // 2. 제목 및 인용구 변환
   html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  
+  // h1 태그 변환 시 사이드바 연동을 위한 id="section-X" 순차적 부여
+  let h1Count = 1;
+  html = html.replace(/^# (.*$)/gim, function(match, p1) {
+    if (h1Count <= 7) {
+      const id = 'section-' + h1Count;
+      h1Count++;
+      return '<h1 id="' + id + '">' + p1 + '</h1>';
+    } else {
+      return '<h1>' + p1 + '</h1>';
+    }
+  });
+
   html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
   html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
   
@@ -297,28 +315,10 @@ function parseMarkdown(md) {
   return html;
 }
 
-// 🔀 탭 전환 함수
-function switchTab(tabId, buttonElement) {
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-  
-  document.getElementById(tabId).classList.add('active');
-  buttonElement.classList.add('active');
-  
-  // 탭 전환 시 검색창과 하이라이트 내용 초기화
-  document.getElementById('searchInput').value = "";
-  document.getElementById('descTab').innerHTML = originalDescHTML;
-  document.getElementById('codeTab').innerHTML = originalCodeHTML;
-}
-
-// 🔍 단어 찾기 기능 (현재 활성화된 탭 기준 검색)
+// 🔍 단어 찾기 기능
 function handleSearch() {
   const input = document.getElementById('searchInput').value.trim();
-  const activeTab = document.querySelector('.tab-content.active');
-  
-  // 현재 어떤 탭이 켜져 있느냐에 따라 백업 원본 선택
-  const isDesc = activeTab.id === 'descTab';
-  const originalHTML = isDesc ? originalDescHTML : originalCodeHTML;
+  const activeTab = document.getElementById('mainContent');
   
   if (!input) {
     activeTab.innerHTML = originalHTML;
@@ -330,7 +330,7 @@ function handleSearch() {
   const regex = new RegExp(`(?<!<[^>]*)${escapedInput}`, 'gi');
   
   if (!regex.test(activeTab.innerText)) {
-    alert("현재 탭 본문에 찾는 단어가 없습니다! 🔍");
+    alert("현재 본문에 찾는 단어가 없습니다! 🔍");
     return;
   }
   
