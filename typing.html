@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Code Typing Defense</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+  body {
+    margin: 0;
+    background: #050505;
+    color: #00ff41;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #game-area {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+  }
+
+  /* 떨어지는 단어 */
+  .word {
+    position: absolute;
+    font-size: 28px;
+    font-weight: bold;
+    text-shadow: 0 0 10px #00ff41, 0 0 20px #008f11;
+    transition: transform 0.1s, color 0.15s, text-shadow 0.15s;
+    white-space: nowrap;
+    letter-spacing: 2px;
+  }
+
+  /* 폭발 효과 */
+  .explode {
+    color: #ffffff;
+    text-shadow: 0 0 30px #ffffff, 0 0 50px #00ff41;
+    transform: scale(1.5);
+    opacity: 0;
+  }
+
+  /* 상단 UI */
+  #ui {
+    position: absolute;
+    top: 20px;
+    left: 30px;
+    font-size: 24px;
+    text-shadow: 0 0 5px #00ff41;
+    z-index: 50;
+  }
+  .exit-btn {
+    display: inline-block;
+    margin-top: 15px;
+    color: #008f11;
+    text-decoration: none;
+    border: 1px solid #008f11;
+    padding: 5px 15px;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .exit-btn:hover {
+    color: #00ff41;
+    border-color: #00ff41;
+    box-shadow: 0 0 15px #00ff41 inset;
+  }
+
+  /* 하단 입력창 */
+  #input-area {
+    position: absolute;
+    bottom: 50px;
+    width: 100%;
+    text-align: center;
+    z-index: 50;
+  }
+  #input-box {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 32px;
+    padding: 15px 30px;
+    background: rgba(0, 30, 0, 0.7);
+    border: 2px solid #00ff41;
+    color: #ffffff;
+    border-radius: 8px;
+    outline: none;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+    text-align: center;
+    width: 400px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    transition: box-shadow 0.2s;
+  }
+  #input-box:focus {
+    box-shadow: 0 0 40px rgba(0, 255, 65, 0.8);
+  }
+
+  /* 게임 오버 화면 */
+  .game-over {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(10, 0, 0, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    display: none;
+  }
+  .game-over h1 {
+    font-size: 70px;
+    color: #ff003c;
+    margin-bottom: 10px;
+    text-shadow: 0 0 30px #ff003c;
+    letter-spacing: 5px;
+  }
+  .game-over p {
+    font-size: 30px;
+    color: #ffffff;
+    margin-bottom: 50px;
+  }
+  .restart-btn {
+    padding: 15px 40px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 28px;
+    background: transparent;
+    color: #00ff41;
+    border: 2px solid #00ff41;
+    cursor: pointer;
+    box-shadow: 0 0 15px #00ff41 inset;
+    transition: all 0.3s;
+    border-radius: 5px;
+  }
+  .restart-btn:hover {
+    background: #00ff41;
+    color: #000;
+    box-shadow: 0 0 30px #00ff41;
+  }
+
+  /* 배경 매트릭스 라인 효과 */
+  .scanline {
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(0deg, rgba(0,255,65,0) 0%, rgba(0,255,65,0.1) 50%, rgba(0,255,65,0) 100%);
+    opacity: 0.3;
+    position: absolute;
+    bottom: 100%;
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+  @keyframes scanline {
+    0% { bottom: 100%; }
+    100% { bottom: -100px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game-area">
+  <div class="scanline"></div>
+  
+  <div id="ui">
+    [ SYSTEM STATUS ]<br>
+    SCORE: <span id="score">0</span><br>
+    LIVES: <span id="lives">♥♥♥♥♥</span>
+    <br><br>
+    <a href="index.html" class="exit-btn">➔ DISCONNECT</a>
+  </div>
+  
+  <div id="input-area">
+    <input type="text" id="input-box" autocomplete="off" autofocus placeholder="TYPE KEYWORD">
+  </div>
+</div>
+
+<div class="game-over" id="game-over">
+  <h1>SYSTEM FAILURE</h1>
+  <p>FINAL SCORE: <span id="final-score">0</span></p>
+  <button class="restart-btn" onclick="startGame()">REBOOT SYSTEM</button>
+</div>
+
+<script>
+// 개발자 포트폴리오에 어울리는 프로그래밍 키워드
+const wordsList = [
+  "HTML", "CSS", "JAVASCRIPT", "PYTHON", "REACT", "NODE", 
+  "ALGORITHM", "VARIABLE", "FUNCTION", "DEBUG", "SYSTEM", 
+  "MATRIX", "HACKER", "CYBER", "SERVER", "ARRAY", "OBJECT",
+  "DATABASE", "SQL", "DOCKER", "API", "FRONTEND", "BACKEND",
+  "GITHUB", "TERMINAL", "CONSOLE", "PROMISE", "ASYNC"
+];
+
+let words = [];
+let score = 0;
+let lives = 5;
+let spawnSpeed = 2000;
+let fallSpeed = 2.5;
+let spawnInterval;
+let gameLoop;
+let isPlaying = false;
+
+const gameArea = document.getElementById('game-area');
+const inputBox = document.getElementById('input-box');
+const scoreEl = document.getElementById('score');
+const livesEl = document.getElementById('lives');
+const gameOverScreen = document.getElementById('game-over');
+const finalScoreEl = document.getElementById('final-score');
+
+function createWord() {
+  const wordText = wordsList[Math.floor(Math.random() * wordsList.length)];
+  const wordEl = document.createElement('div');
+  wordEl.classList.add('word');
+  wordEl.textContent = wordText;
+  
+  // 화면 중앙 80% 영역 안에서 랜덤 생성
+  const maxWidth = window.innerWidth - 200;
+  const x = Math.random() * maxWidth + 100;
+  wordEl.style.left = `${x}px`;
+  wordEl.style.top = '-50px';
+  
+  gameArea.appendChild(wordEl);
+  words.push({ el: wordEl, text: wordText, y: -50 });
+}
+
+function updateGame() {
+  if (!isPlaying) return;
+  
+  for (let i = words.length - 1; i >= 0; i--) {
+    let w = words[i];
+    w.y += fallSpeed;
+    w.el.style.top = `${w.y}px`;
+    
+    // 바닥(입력창 근처)에 닿았는지 체크
+    if (w.y > window.innerHeight - 150) {
+      // 놓침 (생명력 감소)
+      w.el.style.color = '#ff003c';
+      w.el.style.textShadow = '0 0 20px #ff003c';
+      w.el.style.transform = 'scale(1.2)';
+      
+      const elToRemove = w.el;
+      setTimeout(() => { if (elToRemove.parentNode) elToRemove.remove(); }, 300);
+      words.splice(i, 1);
+      
+      lives--;
+      updateLivesDisplay();
+      
+      // 화면 붉게 깜빡임 효과
+      document.body.style.background = '#2a0000';
+      setTimeout(() => document.body.style.background = '#050505', 150);
+      
+      if (lives <= 0) {
+        endGame();
+      }
+    }
+  }
+}
+
+function updateLivesDisplay() {
+  let hearts = '';
+  for(let i=0; i<5; i++) {
+    hearts += (i < lives) ? '♥' : '♡';
+  }
+  livesEl.textContent = hearts;
+  if(lives <= 2) livesEl.style.color = '#ff003c';
+  else livesEl.style.color = '#00ff41';
+}
+
+function endGame() {
+  isPlaying = false;
+  clearInterval(spawnInterval);
+  clearInterval(gameLoop);
+  gameOverScreen.style.display = 'flex';
+  finalScoreEl.textContent = score;
+  inputBox.blur();
+}
+
+function startGame() {
+  // 기존 단어 싹 지우기
+  words.forEach(w => w.el.remove());
+  words = [];
+  
+  // 상태 초기화
+  score = 0;
+  lives = 5;
+  fallSpeed = 2.5;
+  spawnSpeed = 2000;
+  
+  scoreEl.textContent = score;
+  updateLivesDisplay();
+  gameOverScreen.style.display = 'none';
+  document.body.style.background = '#050505';
+  
+  inputBox.value = '';
+  inputBox.focus();
+  
+  isPlaying = true;
+  
+  clearInterval(spawnInterval);
+  clearInterval(gameLoop);
+  
+  spawnInterval = setInterval(createWord, spawnSpeed);
+  gameLoop = setInterval(updateGame, 30); // 약 33fps로 부드럽게 이동
+}
+
+// 타이핑 이벤트 리스너
+inputBox.addEventListener('input', (e) => {
+  const typed = inputBox.value.toUpperCase();
+  
+  for (let i = 0; i < words.length; i++) {
+    if (words[i].text === typed) {
+      // 단어 격추 성공!
+      const w = words[i];
+      w.el.classList.add('explode');
+      
+      const elToRemove = w.el;
+      setTimeout(() => { if (elToRemove.parentNode) elToRemove.remove(); }, 200);
+      words.splice(i, 1);
+      
+      score += 10;
+      scoreEl.textContent = score;
+      inputBox.value = '';
+      
+      // 난이도 상승 (50점마다)
+      if (score > 0 && score % 50 === 0) {
+        fallSpeed += 0.5;
+        clearInterval(spawnInterval);
+        spawnSpeed = Math.max(600, spawnSpeed - 200); // 생성 주기 단축
+        spawnInterval = setInterval(createWord, spawnSpeed);
+      }
+      break;
+    }
+  }
+});
+
+// 화면 아무곳이나 눌러도 항상 입력창에 포커스 유지 (편의성)
+document.addEventListener('click', () => {
+  if (isPlaying) inputBox.focus();
+});
+
+// 게임 즉시 시작
+startGame();
+</script>
+
+</body>
+</html>

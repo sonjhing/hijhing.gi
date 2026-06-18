@@ -6,26 +6,26 @@
 <title> Coding Cloud - Premium</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght=700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
 
 :root {
-  --sky1: #e0f4ff;
-  --sky2: #bbf2c6;
-  --ground1: #6fdc83;
-  --ground2: #4fbf6a;
-  --text: #2c4c30;
-  --cloud-bg: rgba(255, 255, 255, 0.95);
-  --cloud-text: #333333;
+  --sky1: #e6f0fa;
+  --sky2: #c3e0e5;
+  --ground1: #78c292;
+  --ground2: #529b6d;
+  --text: #1a3c2a;
+  --cloud-bg: #ffffff;
+  --cloud-text: #2d3748;
 }
 
 body.night {
-  --sky1: #0b132b;
-  --sky2: #1c2541;
-  --ground1: #1c3d27;
-  --ground2: #112a1a;
-  --text: #e1f5fe;
-  --cloud-bg: rgba(30, 41, 59, 0.9);
-  --cloud-text: #ffffff;
+  --sky1: #0f172a;
+  --sky2: #1e293b;
+  --ground1: #1e3a29;
+  --ground2: #122218;
+  --text: #f8fafc;
+  --cloud-bg: rgba(30, 41, 59, 0.95);
+  --cloud-text: #f8fafc;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,9 +34,39 @@ body {
   font-family: 'Nunito', sans-serif;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  background: linear-gradient(135deg, var(--sky1), var(--sky2));
   transition: background 1.5s ease;
-  perspective: 1000px; /* 3D 입체감 부여 */
+  perspective: 1200px;
+}
+
+/* 해와 달 */
+.celestial {
+  position: absolute;
+  top: 15%;
+  left: 20%;
+  font-size: 70px;
+  transition: all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
+}
+.sun {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0deg);
+}
+.moon {
+  opacity: 0;
+  transform: translateY(150px) scale(0.5) rotate(-45deg);
+}
+
+body.night .sun {
+  opacity: 0;
+  transform: translateY(150px) scale(0.5) rotate(45deg);
+}
+body.night .moon {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0deg);
+  filter: drop-shadow(0 0 25px rgba(255,255,150,0.6));
 }
 
 /* 헤더 스타일 */
@@ -51,35 +81,37 @@ body {
 .header h1 {
   color: var(--text);
   font-size: 3.5rem;
-  font-weight: 900;
-  text-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.05);
   transition: color 1s;
 }
 .header p {
   color: var(--text);
-  opacity: 0.8;
+  opacity: 0.7;
   font-size: 1.1rem;
   margin-top: 10px;
+  font-weight: 600;
   transition: color 1s;
 }
 
 /* 테마 토글 버튼 */
 .toggle {
-  position: absolute; right: 40px; top: 40px; width: 60px; height: 60px;
-  border-radius: 50%; border: none; font-size: 26px; cursor: pointer;
-  background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.15); z-index: 1000;
+  position: absolute; right: 40px; top: 40px; width: 50px; height: 50px;
+  border-radius: 50%; border: none; font-size: 22px; cursor: pointer;
+  background: rgba(255,255,255,0.8); box-shadow: 0 8px 20px rgba(0,0,0,0.1); z-index: 1000;
+  backdrop-filter: blur(5px);
   display: flex; align-items: center; justify-content: center;
   transition: transform 0.3s, background 0.3s;
 }
-.toggle:hover { transform: scale(1.1) rotate(15deg); }
-body.night .toggle { background: #1e293b; color: white; }
+.toggle:hover { transform: scale(1.1) rotate(15deg); background: white; }
+body.night .toggle { background: rgba(30,41,59,0.8); color: white; }
 
 /* 3D 월드 컨테이너 */
 .world {
   position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; height: 100%;
+  width: 100vw; height: 100vh;
   transform-style: preserve-3d;
-  transition: transform 0.1s ease-out; /* 마우스 무브 연동용 */
 }
 
 /* 잔디밭 바닥 */
@@ -87,69 +119,90 @@ body.night .toggle { background: #1e293b; color: white; }
   position: absolute; bottom: -150px; left: -10%; width: 120%; height: 500px;
   background: linear-gradient(135deg, var(--ground1), var(--ground2));
   border-radius: 50% 50% 0 0;
-  box-shadow: 0 30px 100px rgba(0,0,0,0.2);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
   transition: background 1.5s;
   z-index: 1;
+  transform: translateZ(-200px);
 }
 
-/* 나무 (디테일 업그레이드) */
+/* 고급스러운 나무 */
 .tree { position: absolute; width: 160px; height: 220px; z-index: 2; transition: bottom 0.5s; }
-.leaf { position: absolute; border-radius: 50%; transition: background 1.5s; }
-.back { width: 130px; height: 130px; background: #a7f0a0; top: 10px; left: 20px; opacity: 0.8; }
-.mid { width: 140px; height: 140px; background: #7fe07f; top: 0; left: 15px; }
-.front { width: 120px; height: 120px; background: #5fd35f; top: 20px; left: 35px; box-shadow: 0 15px 30px rgba(0,0,0,0.15); }
-.trunk { position: absolute; width: 24px; height: 90px; background: #926438; left: 73px; bottom: 0; border-radius: 12px; }
+.leaf { position: absolute; border-radius: 50%; transition: background 1.5s; box-shadow: inset -5px -5px 15px rgba(0,0,0,0.1); }
+.back { width: 130px; height: 130px; background: linear-gradient(135deg, #a7f0a0, #8ad184); top: 10px; left: 20px; opacity: 0.9; }
+.mid { width: 140px; height: 140px; background: linear-gradient(135deg, #7fe07f, #63b363); top: 0; left: 15px; }
+.front { width: 120px; height: 120px; background: linear-gradient(135deg, #5fd35f, #48a848); top: 20px; left: 35px; box-shadow: 0 10px 20px rgba(0,0,0,0.1), inset -5px -5px 15px rgba(0,0,0,0.1); }
+.trunk { position: absolute; width: 20px; height: 90px; background: linear-gradient(to right, #7a502a, #926438); left: 75px; bottom: 0; border-radius: 10px; }
 
-body.night .back { background: #224a34; }
-body.night .mid { background: #1b3d29; }
-body.night .front { background: #153020; }
+body.night .back { background: linear-gradient(135deg, #2a593e, #1e422c); }
+body.night .mid { background: linear-gradient(135deg, #1b3d29, #132b1d); }
+body.night .front { background: linear-gradient(135deg, #153020, #0c1c12); }
 
-.t1 { left: 15%; bottom: 80px; transform: scale(0.85); }
-.t2 { left: 45%; bottom: 60px; transform: scale(1); }
-.t3 { right: 15%; bottom: 90px; transform: scale(0.95); }
+.t1 { left: 15%; bottom: 80px; transform: translateZ(-100px) scale(0.85); }
+.t2 { left: 45%; bottom: 60px; transform: translateZ(0px) scale(1); }
+.t3 { right: 15%; bottom: 90px; transform: translateZ(-50px) scale(0.95); }
 
-/* 구름 (글자 가림 현상 완벽 해결 및 애니메이션 추가) */
+/* 글래스모피즘 구름 (고급화) */
+.cloud-wrapper {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.cw1 { left: 12%; top: 25%; transform: translateZ(50px); }
+.cw2 { left: 42%; top: 20%; transform: translateZ(100px); }
+.cw3 { left: 72%; top: 28%; transform: translateZ(30px); }
+.cw4 { left: 22%; top: 50%; transform: translateZ(80px); }
+.cw5 { left: 52%; top: 53%; transform: translateZ(120px); }
+.cw6 { left: 78%; top: 48%; transform: translateZ(60px); }
+
 .cloud {
-  position: absolute; width: 220px; height: 80px; background: var(--cloud-bg);
+  position: relative; width: 220px; height: 80px; background: var(--cloud-bg);
   border-radius: 50px; cursor: pointer;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05), inset 0 2px 10px rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 1.5s, box-shadow 0.4s;
   display: flex; align-items: center; justify-content: center;
   z-index: 5;
-  text-decoration: none; /* 밑줄 방지 */
+  text-decoration: none;
 }
 .cloud span {
-  position: relative; z-index: 10; font-weight: 900; color: var(--cloud-text); font-size: 20px; letter-spacing: 1px; transition: color 1.5s;
+  position: relative; z-index: 10; font-weight: 800; color: var(--cloud-text); font-size: 20px; letter-spacing: 1px; transition: color 1.5s;
 }
 .cloud:hover {
-  transform: scale(1.15) translateY(-5px);
-  box-shadow: 0 25px 45px rgba(0,0,0,0.2);
+  transform: scale(1.1) translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15), inset 0 2px 15px rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.9);
 }
-.cloud:before, .cloud:after { content: ""; position: absolute; background: var(--cloud-bg); border-radius: 50%; transition: background 1.5s; }
+body.night .cloud:hover { background: rgba(30,41,59,0.9); }
+
+.cloud:before, .cloud:after { 
+  content: ""; position: absolute; background: var(--cloud-bg); border-radius: 50%; 
+  transition: background 1.5s; 
+  box-shadow: inset 0 5px 10px rgba(255,255,255,0.3);
+  border-top: 1px solid rgba(255,255,255,0.3);
+  backdrop-filter: blur(8px);
+}
 .cloud:before { width: 90px; height: 90px; left: 25px; top: -40px; }
 .cloud:after { width: 110px; height: 110px; right: 25px; top: -50px; }
 
-/* 구름 개별 둥실둥실 애니메이션 (박자 다르게 조정) */
+/* 구름 개별 둥실둥실 애니메이션 */
 @keyframes float1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
 @keyframes float2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
 @keyframes float3 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 
-.c1 { left: 12%; top: 25%; animation: float1 5s ease-in-out infinite; }
-.c2 { left: 42%; top: 20%; animation: float2 6s ease-in-out infinite; }
-.c3 { left: 72%; top: 28%; animation: float3 5.5s ease-in-out infinite; }
-.c4 { left: 22%; top: 50%; animation: float3 6.5s ease-in-out infinite; }
-.c5 { left: 52%; top: 53%; animation: float1 5.8s ease-in-out infinite; }
-.c6 { left: 78%; top: 48%; animation: float2 6.2s ease-in-out infinite; }
+.cloud.f1 { animation: float1 5s ease-in-out infinite; }
+.cloud.f2 { animation: float2 6s ease-in-out infinite; }
+.cloud.f3 { animation: float3 5.5s ease-in-out infinite; }
 
-/* 구름에서 떨어지는 코딩 비/눈 효과 스크립트용 스타일 */
+/* 코딩 비 효과 */
 .drop {
-  position: absolute; color: #4fbf6a; font-size: 12px; font-weight: bold;
+  position: absolute; color: #4fbf6a; font-size: 14px; font-weight: bold;
   pointer-events: none; animation: fall 1.5s linear forwards; z-index: 3;
 }
 body.night .drop { color: #a7f0a0; }
 @keyframes fall {
   0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(250px); opacity: 0; }
+  100% { transform: translateY(300px); opacity: 0; }
 }
 
 /* 밤하늘 별 */
@@ -164,6 +217,9 @@ body.night .drop { color: #a7f0a0; }
 <body>
 <button class="toggle" id="toggle">🌙</button>
 
+<div class="celestial sun">☀️</div>
+<a href="typing.html" target="_self" style="text-decoration: none;"><div class="celestial moon" style="cursor: pointer;" title="비밀 게임 접속!">🌙</div></a>
+
 <div class="header">
   <h1>☁️ Coding Cloud Garden</h1>
   <p>구름을 호버하면 코딩 비가 내리고, 클릭하면 세계가 이동합니다.</p>
@@ -176,27 +232,26 @@ body.night .drop { color: #a7f0a0; }
   <div class="tree t2"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
   <div class="tree t3"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
 
-  <!-- target="_self" 를 추가하여 무조건 현재 탭에서 바로 실행되도록 고정했습니다. -->
-  <a href="htm.html" target="_self" class="cloud c1"> <span>HTML</span> </a>
-  <a href="css.html" target="_self" class="cloud c2"> <span>CSS</span> </a>
-  <a href="js.html" target="_self" class="cloud c3"> <span>JavaScript</span> </a>
-  <a href="python.html" target="_self" class="cloud c4"> <span>Python</span> </a>
-  <a href="ai.html" target="_self" class="cloud c5"> <span>AI</span> </a>
-  <a href="cc.html" target="_self" class="cloud c6">  <span>C</span> </a>
+  <!-- 구름 래퍼를 통해 3D 위치를 잡고, 내부에서 둥실둥실 애니메이션 수행 -->
+  <div class="cloud-wrapper cw1"><a href="htm.html" target="_self" class="cloud f1"><span>HTML</span></a></div>
+  <div class="cloud-wrapper cw2"><a href="css.html" target="_self" class="cloud f2"><span>CSS</span></a></div>
+  <div class="cloud-wrapper cw3"><a href="js.html" target="_self" class="cloud f3"><span>JavaScript</span></a></div>
+  <div class="cloud-wrapper cw4"><a href="python.html" target="_self" class="cloud f3"><span>Python</span></a></div>
+  <div class="cloud-wrapper cw5"><a href="ai.html" target="_self" class="cloud f1"><span>AI</span></a></div>
+  <div class="cloud-wrapper cw6"><a href="cc.html" target="_self" class="cloud f2"><span>C</span></a></div>
 </div>
 
 <script>
 const toggle = document.getElementById("toggle");
 const world = document.getElementById("world");
 
-// 1. 다크모드 & 라이트모드 전환 및 별 관리
+// 1. 다크모드 & 라이트모드 전환
 toggle.addEventListener("click", () => {
   document.body.classList.toggle("night");
   const isNight = document.body.classList.contains("night");
   toggle.textContent = isNight ? "☀️" : "🌙";
   
   if (!isNight) {
-    // 낮으로 바뀌면 기존 별 모두 제거
     document.querySelectorAll('.star').forEach(star => star.remove());
   }
 });
@@ -204,24 +259,23 @@ toggle.addEventListener("click", () => {
 // 밤하늘 별 생성 루프
 setInterval(() => {
   if (!document.body.classList.contains("night")) return;
-  
   const star = document.createElement("div");
   star.classList.add("star");
   const size = Math.random() * 3 + 1;
   star.style.width = `${size}px`;
   star.style.height = `${size}px`;
   star.style.left = Math.random() * 100 + "%";
-  star.style.top = Math.random() * 70 + "%"; // 주로 하늘 쪽에 생성
+  star.style.top = Math.random() * 70 + "%";
   star.style.animationDelay = Math.random() * 2 + "s";
-  
   document.body.appendChild(star);
   setTimeout(() => star.remove(), 4000);
 }, 300);
 
 
-// 2. 구름 마우스 오버 시 코딩 비(Rain) 내리는 효과
+
+// 3. 구름 마우스 오버 시 코딩 비(Rain) 내리는 효과
 const clouds = document.querySelectorAll('.cloud');
-const codeCharacters = ['0', '1', '<>', '{}', ';', '++', '===', 'JS', 'HTML', 'CSS'];
+const codeCharacters = ['0', '1', '<>', '{}', ';', '++', '===', 'JS', 'HTML', 'CSS', 'def'];
 
 clouds.forEach(cloud => {
   let rainInterval;
@@ -231,20 +285,17 @@ clouds.forEach(cloud => {
       const drop = document.createElement('div');
       drop.classList.add('drop');
       
-      // 구름의 현재 위치 기준으로 랜덤하게 비 낙하위치 선정
       const rect = cloud.getBoundingClientRect();
       const randomLeft = rect.left + Math.random() * rect.width;
-      const startTop = rect.bottom - 20;
+      const startTop = rect.bottom - 10;
       
       drop.style.left = `${randomLeft}px`;
       drop.style.top = `${startTop}px`;
       drop.textContent = codeCharacters[Math.floor(Math.random() * codeCharacters.length)];
       
       document.body.appendChild(drop);
-      
-      // 애니메이션 종료 후 요소 제거
       setTimeout(() => drop.remove(), 1500);
-    }, 80);
+    }, 100);
   });
   
   cloud.addEventListener('mouseleave', () => {
