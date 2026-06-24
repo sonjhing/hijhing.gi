@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 모델 추천기 - 고 가든</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+:root {
+  --sky1: #e0f4ff;
+  --sky2: #bbf2c6;
+  --text: #2c4c30;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --accent: #4fbf6a;
+  --accent-hover: #3da556;
+  --input-bg: #ffffff;
+  --input-border: rgba(0, 0, 0, 0.1);
+  --result-bg: rgba(79, 191, 106, 0.1);
+}
+
+body.night {
+  --sky1: #0b132b;
+  --sky2: #1c2541;
+  --text: #e1f5fe;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --accent: #a7f0a0;
+  --accent-hover: #8ae083;
+  --input-bg: #1e293b;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --result-bg: rgba(167, 240, 160, 0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans KR', 'Nunito', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  background-attachment: fixed;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  transition: background 1.5s ease, color 1s;
+}
+
+/* 홈으로 가기 버튼 */
+.nav-bar {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+}
+.home-btn {
+  padding: 12px 24px;
+  border-radius: 50px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  transition: all 0.3s;
+}
+.home-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 25px rgba(0,0,0,0.1); }
+
+/* 메인 카드 */
+.card {
+  background: var(--card-bg);
+  padding: 50px;
+  border-radius: 30px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  backdrop-filter: blur(15px);
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  margin-bottom: 10px;
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  margin-bottom: 40px;
+}
+
+/* 입력 폼 */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.input-box {
+  position: relative;
+}
+
+.input-box input {
+  width: 100%;
+  padding: 16px 20px;
+  border-radius: 15px;
+  border: 2px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  outline: none;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.input-box input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 15px rgba(79, 191, 106, 0.2);
+}
+
+/* 추천 버튼 */
+.submit-btn {
+  width: 100%;
+  padding: 18px;
+  border-radius: 15px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 10px 20px rgba(79, 191, 106, 0.3);
+}
+body.night .submit-btn { color: #112a1a; box-shadow: 0 10px 20px rgba(167, 240, 160, 0.2); }
+.submit-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+
+/* 결과 출력 영역 */
+.result-area {
+  margin-top: 30px;
+  padding: 30px;
+  border-radius: 20px;
+  background: var(--result-bg);
+  display: none; /* 처음엔 숨김 */
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 15px;
+  opacity: 0.9;
+}
+
+.result-model {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 15px;
+}
+
+.result-desc {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* 추천 모델 태그 */
+.tags {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.tag {
+  background: var(--accent);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+body.night .tag { color: #112a1a; }
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="index.html" class="home-btn">🌳 고 가든으로 돌아가기</a>
+</div>
+
+<div class="card">
+  <h1 class="title">🤖 AI 모델 추천기</h1>
+  <p class="subtitle">현재 상황이나 데이터의 특징 키워드 3개를 입력하세요.<br>가장 성능이 잘 나올 모델을 추천해 드립니다!</p>
+
+  <div class="input-group">
+    <div class="input-box">
+      <input type="text" id="kw1" placeholder="첫 번째 키워드 (예: 분류)" autocomplete="off">
+    </div>
+    <div class="input-box">
+      <input type="text" id="kw2" placeholder="두 번째 키워드 (예: 대용량)" autocomplete="off">
+    </div>
+    <div class="input-box">
+      <input type="text" id="kw3" placeholder="세 번째 키워드 (예: 불균형)" autocomplete="off" onkeypress="if(event.key === 'Enter') recommendModel()">
+    </div>
+  </div>
+
+  <button class="submit-btn" onclick="recommendModel()">🔮 최적의 모델 추천받기</button>
+
+  <div class="result-area" id="resultArea">
+    <div class="result-title">입력하신 키워드 분석 결과, 추천하는 모델은...</div>
+    <div class="result-model" id="resultModel">LinearSVC</div>
+    <div class="result-desc" id="resultDesc">
+      대용량 데이터와 불균형한 클래스를 처리하는 데 가장 속도가 빠르고 효과적인 SVM 모델입니다.
+    </div>
+    <div class="tags" id="resultTags">
+      <!-- 태그가 여기에 들어갑니다 -->
+    </div>
+    
+    <div id="resultLinkArea" style="margin-top:20px; display:none;">
+      <a href="#" id="resultLink" target="_blank" style="display:inline-block; padding:10px 20px; background:var(--card-bg); color:var(--text); text-decoration:none; border-radius:10px; font-weight:700; box-shadow:0 4px 10px rgba(0,0,0,0.1); border:1px solid var(--accent);">
+        📚 관련 학습 코드/매뉴얼 보기
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// 밤 모드 감지 테마 세팅
+if (localStorage.getItem('theme') === 'night' || window.location.search.includes('theme=night')) {
+  document.body.classList.add('night');
+}
+
+// 🧠 머신러닝 모델 지식 베이스 (규칙 기반)
+const models = [
+  {
+    name: "LinearSVC (SVM)",
+    keywords: ["대용량", "불균형", "속도", "빠름", "분류", "사기", "카드", "이진분류", "고차원"],
+    desc: "데이터가 수십만 건 이상으로 대용량이거나, 정상/비정상 비율이 극도로 불균형할 때 가장 빠르고 강력한 성능을 내는 모델입니다.",
+    tags: ["분류", "대용량", "속도최강"],
+    link: "git.html"
+  },
+  {
+    name: "랜덤 포레스트 (Random Forest) / 기본 매뉴얼",
+    keywords: ["기본", "정석", "에러", "해결", "매뉴얼", "중요도", "피처", "앙상블", "과적합", "다수결", "안정성", "트리", "나무", "복잡"],
+    desc: "가장 만능으로 쓰이는 기말고사용 **기본 정석 모델**입니다. 여러 개의 트리를 섞어 과적합을 막고, 에러 해결법까지 포함된 필수 학습 모델입니다.",
+    tags: ["분류/회귀", "만능모델", "과적합방지", "에러해결법"],
+    link: "git.html"
+  },
+  {
+    name: "로지스틱 회귀 (Logistic Regression)",
+    keywords: ["확률", "0과1", "이진", "이진분류", "예/아니오", "성공/실패", "합격/불합격", "기본", "S자"],
+    desc: "정답이 0 또는 1 (예/아니오)인 이진 분류 문제에서 가장 기본적이고 해석하기 쉬운 확률 기반 모델입니다.",
+    tags: ["분류", "확률출력", "기본모델"]
+  },
+  {
+    name: "K-Means 군집화",
+    keywords: ["비지도", "군집", "묶음", "K개", "분할", "그룹", "분류안됨", "정답없음", "중심점"],
+    desc: "정답이 없는 데이터들을 서로 비슷한 것끼리 K개의 묶음(그룹)으로 깔끔하게 나누어 주는 비지도 학습 모델입니다.",
+    tags: ["비지도학습", "그룹화", "단순함"]
+  },
+  {
+    name: "DBSCAN 군집화",
+    keywords: ["비지도", "밀도", "노이즈", "이상치", "불규칙", "복잡한모양", "원형", "반달모양"],
+    desc: "데이터가 뭉쳐있는 밀도를 기반으로 그룹을 묶습니다. K-Means가 못 푸는 복잡하고 불규칙한 모양이나 이상치(노이즈)를 걸러낼 때 탁월합니다.",
+    tags: ["비지도학습", "이상치탐지", "밀도기반"]
+  },
+  {
+    name: "KNN (K-최근접 이웃)",
+    keywords: ["거리", "이웃", "가까운", "단순", "유사도", "직관적", "메모리"],
+    desc: "새로운 데이터가 들어왔을 때 가장 가까이 있는 K개의 이웃을 보고 정답을 찍는 아주 직관적이고 단순한 모델입니다.",
+    tags: ["분류/회귀", "가장단순함", "거리기반"]
+  },
+  {
+    name: "스태킹 / 투표 (Ensemble Voting/Stacking)",
+    keywords: ["최고점", "대회", "필살기", "짜깁기", "조합", "혼합", "극한", "점수올리기"],
+    desc: "시험이나 대회에서 0.01점이라도 더 올리기 위한 최종 필살기! 여러 모델을 돌린 결과를 다시 종합하여 대장 모델이 결정을 내립니다.",
+    tags: ["최고성능", "대회용", "시간오래걸림"]
+  },
+  {
+    name: "다중 선형 회귀 (Linear Regression)",
+    keywords: ["회귀", "연속", "수치", "가격", "예측", "점수", "비례", "선형"],
+    desc: "집값, 시험점수처럼 연속적인 '수치(숫자)'를 예측해야 할 때 여러 개의 특성을 곱하고 더해서 값을 계산해내는 모델입니다.",
+    tags: ["회귀", "수치예측", "기본모델"]
+  },
+  {
+    name: "히스토그램 그래디언트 부스팅 (비상 매뉴얼)",
+    keywords: ["히스토그램", "그래디언트", "부스팅", "비상", "시험장", "과적합방지", "결측치", "고성능", "결측치그대로", "고급"],
+    desc: "데이터 양이 방대하거나 결측치(빈칸)가 포함되어 있을 때 알아서 처리해 주는 최신 고급 앙상블 기법입니다. 시험장에서 에러 없이 가장 빠르고 강력한 점수를 보장하는 비상용 필살기입니다.",
+    tags: ["최고성능", "결측치자동처리", "비상매뉴얼"],
+    link: "git.html"
+  }
+];
+
+function recommendModel() {
+  const k1 = document.getElementById('kw1').value.trim().toLowerCase();
+  const k2 = document.getElementById('kw2').value.trim().toLowerCase();
+  const k3 = document.getElementById('kw3').value.trim().toLowerCase();
+  
+  const inputKeywords = [k1, k2, k3].filter(k => k !== "");
+  
+  if (inputKeywords.length === 0) {
+    alert("키워드를 최소 1개 이상 입력해주세요!");
+    return;
+  }
+
+  // 각 모델별로 매칭 점수 계산
+  let bestModel = models[1]; // 기본값: 랜덤포레스트 (제일 무난함)
+  let maxScore = -1;
+
+  for (let model of models) {
+    let score = 0;
+    for (let word of inputKeywords) {
+      // 키워드가 모델의 키워드 목록에 포함되거나 비슷하면 점수 +1
+      for (let mKw of model.keywords) {
+        if (word.includes(mKw) || mKw.includes(word)) {
+          score += 1;
+        }
+      }
+    }
+    
+    // 동점일 경우 조금 더 우선순위를 줄 수도 있지만, 일단 최고점 갱신 시 변경
+    if (score > maxScore) {
+      maxScore = score;
+      bestModel = model;
+    }
+  }
+
+  // 완전 매칭이 하나도 없으면 (maxScore == 0) 랜덤 포레스트 추천
+  if (maxScore === 0) {
+    bestModel = models[1]; // 랜덤 포레스트
+    bestModel.desc = "입력하신 키워드에 딱 떨어지는 특정 모델을 찾기 어렵습니다. 하지만 이런 경우 대부분 **랜덤 포레스트**가 가장 무난하고 강력한 성능을 발휘합니다!";
+  }
+
+  // 결과 화면에 렌더링
+  document.getElementById('resultModel').innerText = bestModel.name;
+  
+  // 설명을 마크다운처럼 강조(볼드체) 처리
+  let formattedDesc = bestModel.desc.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  document.getElementById('resultDesc').innerHTML = formattedDesc;
+
+  // 태그 생성
+  const tagsContainer = document.getElementById('resultTags');
+  tagsContainer.innerHTML = "";
+  bestModel.tags.forEach(tag => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.innerText = "#" + tag;
+    tagsContainer.appendChild(span);
+  });
+
+  // 관련 링크 처리
+  const linkArea = document.getElementById('resultLinkArea');
+  const linkBtn = document.getElementById('resultLink');
+  if (bestModel.link) {
+    linkArea.style.display = 'block';
+    linkBtn.href = bestModel.link;
+  } else {
+    linkArea.style.display = 'none';
+  }
+
+  // 결과 영역 보여주기
+  const resultArea = document.getElementById('resultArea');
+  resultArea.style.display = 'block';
+  
+  // 부드럽게 스크롤
+  resultArea.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+</script>
+
+</body>
+</html>

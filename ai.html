@@ -266,7 +266,10 @@ body.night .viewer-panel code { background: rgba(255,255,255,0.1); }
 <body>
 
 <div class="nav-bar">
-  <a href="index.html" class="home-btn">🌳 고 가든</a>
+  <div style="display: flex; gap: 10px;">
+    <a href="index.html" class="home-btn">🌳 고 가든</a>
+    <a href="recommender.html" target="_blank" class="home-btn" style="background: var(--accent); color: white;">🤖 모델 추천기 (새창)</a>
+  </div>
   
   <div class="search-box">
     <input type="text" id="searchInput" placeholder="현재 열린 파일에서 검색..." onkeypress="if(event.key === 'Enter') handleSearch()">
@@ -294,7 +297,7 @@ body.night .viewer-panel code { background: rgba(255,255,255,0.1); }
           <li class="tree-item" onclick="loadMarkdownFile('regre_5.md', this)">├ 5 로지스틱</li>
           <li class="tree-item" onclick="loadMarkdownFile('regre_7.md', this)">├ 7 KNN/li>
           <li class="tree-item" onclick="loadMarkdownFile('regre_8.md', this)">├ 8 K_Fold</li>
-          <li class="tree-item" onclick="loadMarkdownFile('regre_6.md', this)">├ 9 그리드서치</li>
+          <li class="tree-item" onclick="loadMarkdownFile('regre_9.md', this)">├ 9 그리드서치</li>
         </ul>
 
         <div class="tree-folder">🌳 트리 비지도</div>
@@ -302,11 +305,7 @@ body.night .viewer-panel code { background: rgba(255,255,255,0.1); }
           <li class="tree-item" onclick="loadMarkdownFile('tree_2.md', this)">├ 2 앙상블</li>
           <li class="tree-item" onclick="loadMarkdownFile('tree_3.md', this)">├ 3 군집 Kmeans</li>
           <li class="tree-item" onclick="loadMarkdownFile('tree_4.md', this)">├ 4 군집 DBSCAN</li>
-        </ul>
-
-        <div class="tree-folder">💳 실전 프로젝트</div>
-        <ul class="tree-list">
-          <li class="tree-item" onclick="loadMarkdownFile('sin6.md', this)">├ 신용카드 사기탐지 (sin6)</li>
+          <li class="tree-item" onclick="loadMarkdownFile('sin6.md', this)">├ 5 신용</li>
         </ul>
       </aside>
 
