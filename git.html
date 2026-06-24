@@ -300,16 +300,18 @@ body.night .content-card code { background: rgba(255,255,255,0.1); }
 <div class="main-wrapper">
   <nav class="sidebar">
     <div class="sidebar-title">목차 (TOC)</div>
-    <a href="search.html"> 1 </a>
-    <a href="#" onclick="loadMarkdownData('s3py.md'); return false;"> 2 </a>
-    <a href="secret.html"> 3 </a>
+    <a href="search.html"> 1 (검색) </a>
+    <a href="#" onclick="loadMarkdownData('se3.md'); return false;"> 2 (se3.md) </a>
+    <a href="secret.html"> 3 (secret) </a>
     <a href="#" onclick="loadMarkdownData('se4.md'); return false;"> 4 (기본 매뉴얼) </a>
     <a href="#" onclick="loadMarkdownData('se5.md'); return false;"> 5 (비상 매뉴얼) </a>
+    <a href="#" onclick="loadMarkdownData('sin6.md'); return false;"> 6 (신용카드) </a>
+    <a href="recommender.html"> 7 (모델 추천기) </a>
   </nav>
 
   <div class="content-card">
     <div id="mainContent">
-      <p style="text-align:center; opacity:0.5; padding-top: 50px;">s3py.md 문서를 불러오는 중입니다... ☁️</p>
+      <p style="text-align:center; opacity:0.5; padding-top: 50px;">se3.md 문서를 불러오는 중입니다... ☁️</p>
     </div>
   </div>
 </div>
@@ -334,7 +336,7 @@ function checkPassword() {
     setTimeout(() => overlay.remove(), 500); 
     
     // 비밀번호가 맞은 시점에 기본 화면으로 띄웁니다
-    loadMarkdownData('s3py.md');
+    loadMarkdownData('se3.md');
   } else {
     alert("❌ 비밀번호가 올바르지 않습니다!");
     document.getElementById('pwInput').value = "";
