@@ -6,7 +6,7 @@
 <title> Coding Cloud - Premium</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght=700;900&display=swap');
 
 :root {
   --sky1: #e6f0fa;
@@ -42,8 +42,8 @@ body {
 /* 해와 달 */
 .celestial {
   position: absolute;
-  top: 8%;
-  left: 8%;
+  top: 40px;
+  left: 40px;
   font-size: 70px;
   transition: all 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   z-index: 15;
@@ -69,18 +69,18 @@ body.night .moon {
   filter: drop-shadow(0 0 25px rgba(255,255,150,0.6));
 }
 
-/* 헤더 스타일 */
+/* 헤더 스타일 (글씨 안 겹치도록 정돈) */
 .header {
   position: absolute;
   width: 100%;
   text-align: center;
   top: 40px;
-  z-index: 10;
+  z-index: 20; /* 구름보다 확실히 위에 오도록 */
   pointer-events: none;
 }
 .header h1 {
   color: var(--text);
-  font-size: 3.5rem;
+  font-size: 3.2rem;
   font-weight: 800;
   letter-spacing: 1px;
   text-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -146,12 +146,19 @@ body.night .front { background: linear-gradient(135deg, #153020, #0c1c12); }
   position: absolute;
   transform-style: preserve-3d;
 }
-.cw1 { left: 12%; top: 25%; transform: translateZ(50px); }
-.cw2 { left: 42%; top: 20%; transform: translateZ(100px); }
-.cw3 { left: 72%; top: 28%; transform: translateZ(30px); }
-.cw4 { left: 22%; top: 50%; transform: translateZ(80px); }
-.cw5 { left: 52%; top: 53%; transform: translateZ(120px); }
-.cw6 { left: 78%; top: 48%; transform: translateZ(60px); }
+
+/* 글씨 이하 영역으로 구름 top 위치 전면 하방 조정 (겹침 해결) */
+.cw1 { left: 5%;  top: 28%; transform: translateZ(40px); }
+.cw2 { left: 38%; top: 26%; transform: translateZ(110px); }
+.cw3 { left: 72%; top: 27%; transform: translateZ(50px); }
+
+.cw8 { left: 20%; top: 41%; transform: translateZ(70px); }
+.cw9 { left: 55%; top: 39%; transform: translateZ(140px); }
+.cw7 { left: 82%; top: 42%; transform: translateZ(30px); }
+
+.cw4 { left: 8%;  top: 55%; transform: translateZ(90px); }
+.cw5 { left: 40%; top: 56%; transform: translateZ(150px); }
+.cw6 { left: 70%; top: 54%; transform: translateZ(80px); }
 
 .cloud {
   position: relative; width: 220px; height: 80px; background: var(--cloud-bg);
@@ -232,11 +239,15 @@ body.night .drop { color: #a7f0a0; }
   <div class="tree t2"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
   <div class="tree t3"><div class="leaf back"></div><div class="leaf mid"></div><div class="leaf front"></div><div class="trunk"></div></div>
 
-  <!-- 구름 래퍼를 통해 3D 위치를 잡고, 내부에서 둥실둥실 애니메이션 수행 -->
   <div class="cloud-wrapper cw1"><a href="htm.html" target="_self" class="cloud f1"><span>HTML</span></a></div>
   <div class="cloud-wrapper cw2"><a href="css.html" target="_self" class="cloud f2"><span>CSS</span></a></div>
-  <div class="cloud-wrapper cw3"><a href="js.html" target="_self" class="cloud f3"><span>JavaScript</span></a></div>
-  <div class="cloud-wrapper cw4"><a href="python.html" target="_self" class="cloud f3"><span>Python</span></a></div>
+  <div class="cloud-wrapper cw3"><a href="secret.html" target="_self" class="cloud f3"><span>JS?</span></a></div>
+  
+  <div class="cloud-wrapper cw8"><a href="python.html" target="_self" class="cloud f3"><span>Python</span></a></div>
+  <div class="cloud-wrapper cw9"><a href="secret1.html" target="_self" class="cloud f1"><span>Database</span></a></div>
+  <div class="cloud-wrapper cw7"><a href="git.html" target="_self" class="cloud f3"><span>Git</span></a></div>
+
+  <div class="cloud-wrapper cw4"><a href="alg.html" target="_self" class="cloud f2"><span>Algorithm</span></a></div>
   <div class="cloud-wrapper cw5"><a href="ai.html" target="_self" class="cloud f1"><span>AI</span></a></div>
   <div class="cloud-wrapper cw6"><a href="cc.html" target="_self" class="cloud f2"><span>C</span></a></div>
 </div>
@@ -270,8 +281,6 @@ setInterval(() => {
   document.body.appendChild(star);
   setTimeout(() => star.remove(), 4000);
 }, 300);
-
-
 
 // 3. 구름 마우스 오버 시 코딩 비(Rain) 내리는 효과
 const clouds = document.querySelectorAll('.cloud');
