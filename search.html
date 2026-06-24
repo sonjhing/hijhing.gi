@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 노트 통합 검색기 (시험용)</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            text-align: center;
+        }
+        #searchInput {
+            width: 70%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            outline: none;
+        }
+        #searchInput:focus {
+            border-color: #2980b9;
+        }
+        #status {
+            margin-top: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        #results {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        .result-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 5px solid #3498db;
+        }
+        .file-name {
+            font-size: 14px;
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .content {
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #34495e;
+        }
+        mark {
+            background-color: #f1c40f;
+            color: #000;
+            font-weight: bold;
+            padding: 0 3px;
+            border-radius: 3px;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📚 내 노트 통합 검색 및 짜깁기 뷰어</h1>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="검색어 입력 (예: 로지스틱, K-Fold, 그리드 서치)...">
+        <div id="status">문서들을 불러오고 있습니다...</div>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        // 1. 검색할 파일 목록 (GitHub Pages에 올라가 있는 md 파일들)
+        const files = [
+            'regre_1.md', 'regre_2.md', 'regre_5.md', 'regre_7.md', 'regre_8.md', 'regre_9.md',
+            'tree_2.md', 'tree_3.md', 'tree_4.md', '시험대비_머신러닝_핵심요약.md',
+            'ai.md', 'ai2.md', 'cc.md', 'ccoo.md', 'crun.md', 'ht.md', 's2py.md', 's3py.md', 'sin6.md'
+        ];
+
+        let allDocuments = [];
+
+        // 2. 파일 불러오기 및 단락(Chunk)으로 쪼개기
+        async function loadDocuments() {
+            const statusEl = document.getElementById('status');
+            let loadedCount = 0;
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file);
+                    if (!response.ok) continue;
+                    
+                    const text = await response.text();
+                    
+                    // 문서를 문단 단위(\n\n) 또는 해시태그 단위로 쪼개기
+                    // 너무 짧은 쪼가리는 무시하고, 문맥을 살리기 위해 단락 단위로 묶습니다.
+                    const chunks = text.split(/\n\s*\n|##\s/); 
+
+                    chunks.forEach(chunk => {
+                        if (chunk.trim().length > 20) { // 내용이 너무 없는 빈 줄 등은 제외
+                            allDocuments.push({
+                                filename: file,
+                                content: chunk.trim()
+                            });
+                        }
+                    });
+                    loadedCount++;
+                } catch (error) {
+                    console.error('파일을 불러오는 중 에러 발생:', file, error);
+                }
+            }
+            statusEl.innerText = `총 ${loadedCount}개의 파일에서 데이터를 완벽하게 불러왔습니다! 이제 검색해 보세요.`;
+        }
+
+        // 3. 검색 기능 구현
+        function search() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const resultsEl = document.getElementById('results');
+            resultsEl.innerHTML = '';
+
+            if (query.length < 2) {
+                return; // 검색어가 2자 미만이면 무시
+            }
+
+            const matchedChunks = allDocuments.filter(doc => doc.content.toLowerCase().includes(query));
+
+            if (matchedChunks.length === 0) {
+                resultsEl.innerHTML = '<div style="text-align:center; color:#7f8c8d;">일치하는 내용이 없습니다.</div>';
+                return;
+            }
+
+            // 결과를 화면에 '카드' 형태로 짜깁기해서 보여주기
+            matchedChunks.forEach(doc => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+
+                const fileNameEl = document.createElement('div');
+                fileNameEl.className = 'file-name';
+                fileNameEl.innerText = `📄 출처: ${doc.filename}`;
+
+                const contentEl = document.createElement('div');
+                contentEl.className = 'content';
+                
+                // 검색어 하이라이팅 (마크다운 코드 블록 안에 있어도 하이라이트 되도록 처리)
+                const regex = new RegExp(`(${query})`, 'gi');
+                let highlightedContent = doc.content.replace(regex, '<mark>$1</mark>');
+                
+                // 간단한 마크다운 코드블록(```) 렌더링 처리
+                highlightedContent = highlightedContent.replace(/```[a-z]*\n([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+                contentEl.innerHTML = highlightedContent;
+
+                card.appendChild(fileNameEl);
+                card.appendChild(contentEl);
+                resultsEl.appendChild(card);
+            });
+        }
+
+        // 4. 이벤트 리스너 설정
+        document.getElementById('searchInput').addEventListener('input', search);
+
+        // 페이지가 열리면 즉시 파일들을 불러옵니다.
+        window.onload = loadDocuments;
+    </script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coding Cloud Garden - AI Lab</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Noto+Sans+KR:wght@400;700&display=swap');
+
+:root {
+  --sky1: #e0f4ff;
+  --sky2: #bbf2c6;
+  --text: #2c4c30;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --accent: #4fbf6a;
+  --input-bg: #ffffff;
+  --input-text: #333333;
+  --tab-inactive: rgba(0, 0, 0, 0.05);
+}
+
+body.night {
+  --sky1: #0b132b;
+  --sky2: #1c2541;
+  --text: #e1f5fe;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --accent: #a7f0a0;
+  --input-bg: #1e293b;
+  --input-text: #ffffff;
+  --tab-inactive: rgba(255, 255, 255, 0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth; /* 목차 클릭 시 부드럽게 스크롤 */
+}
+
+body {
+  font-family: 'Noto Sans KR', 'Nunito', sans-serif;
+  min-height: 100vh;
+  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  background-attachment: fixed;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px;
+  transition: background 1.5s ease, color 1s;
+}
+
+/* 🔒 비밀번호 모달 팝업 스타일 */
+.pw-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, var(--sky1), var(--sky2));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease, visibility 0.5s;
+}
+.pw-box {
+  background: var(--card-bg);
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+.pw-box h2 {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+  font-weight: 900;
+}
+.pw-box p {
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+.pw-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pw-input-wrapper input {
+  padding: 14px 20px;
+  border-radius: 50px;
+  border: 1px solid rgba(0,0,0,0.1);
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: 1rem;
+  outline: none;
+  text-align: center;
+}
+body.night .pw-input-wrapper input {
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.pw-input-wrapper button {
+  padding: 14px;
+  border-radius: 50px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+body.night .pw-input-wrapper button { color: #112a1a; }
+.pw-input-wrapper button:hover { opacity: 0.9; }
+
+/* 상단 내비게이션 바 */
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: 20px;
+}
+
+/* 홈 버튼 */
+.home-btn {
+  padding: 12px 24px;
+  border-radius: 50px;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.home-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+/* 찾기 상자 */
+.search-box {
+  display: flex;
+  gap: 10px;
+  background: var(--card-bg);
+  padding: 6px 6px 6px 16px;
+  border-radius: 50px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  align-items: center;
+  width: 350px;
+}
+.search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.95rem;
+  color: var(--input-text);
+  width: 100%;
+}
+.search-box button {
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+body.night .search-box button { color: #112a1a; }
+.search-box button:hover { opacity: 0.9; }
+
+/* 메인 레이아웃 래퍼 (사이드바 + 콘텐츠) */
+.main-wrapper {
+  display: flex;
+  width: 100%;
+  max-width: 1000px;
+  gap: 30px;
+  align-items: flex-start;
+}
+
+/* 고정된 사이드바(목차) 스타일 */
+.sidebar {
+  position: sticky;
+  top: 40px;
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sidebar-title {
+  font-weight: 900;
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  text-align: center;
+  color: var(--accent);
+}
+.sidebar a {
+  text-decoration: none;
+  color: var(--text);
+  font-weight: 700;
+  padding: 12px 15px;
+  border-radius: 12px;
+  background: var(--tab-inactive);
+  transition: all 0.3s;
+  font-size: 0.95rem;
+}
+.sidebar a:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateX(5px);
+}
+body.night .sidebar a:hover { color: #112a1a; }
+
+/* 콘텐츠 카드 디자인 */
+.content-card {
+  flex-grow: 1;
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  line-height: 1.8;
+  min-height: 600px;
+  min-width: 0; /* Flex 버그 방지 */
+}
+
+/* 마크다운 공통 렌더링 스타일 */
+.content-card h1 { font-size: 2.3rem; font-weight: 900; margin-bottom: 20px; border-bottom: 3px solid var(--accent); padding-bottom: 10px; margin-top: 40px; }
+.content-card h1:first-child { margin-top: 0; }
+.content-card h2 { font-size: 1.6rem; margin-top: 30px; margin-bottom: 15px; color: var(--accent); }
+.content-card h3 { font-size: 1.2rem; margin-top: 20px; margin-bottom: 10px; }
+.content-card p { margin-bottom: 15px; font-size: 1.05rem; opacity: 0.9; }
+.content-card ul, .content-card ol { margin-left: 25px; margin-bottom: 20px; }
+.content-card li { margin-bottom: 5px; }
+.content-card blockquote { border-left: 4px solid var(--accent); padding-left: 15px; color: gray; margin: 15px 0; }
+
+/* 마크다운 내부의 코드 블록 스타일 */
+.content-card pre {
+  background: var(--input-bg);
+  color: var(--input-text);
+  padding: 15px;
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 15px 0;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.content-card code {
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+body.night .content-card code { background: rgba(255,255,255,0.1); }
+
+/* 찾기 하이라이트 */
+.highlight {
+  background-color: #ffeb3b;
+  color: #000000;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+</style>
+</head>
+<body>
+
+<div class="pw-overlay" id="passwordOverlay">
+  <div class="pw-box">
+    <h2>🔒 비밀 정원 입장</h2>
+    <p>이곳에 들어가려면 비밀번호가 필요합니다.</p>
+    <div class="pw-input-wrapper">
+      <input type="password" id="pwInput" placeholder="비밀번호 입력..." onkeypress="if(event.key === 'Enter') checkPassword()">
+      <button onclick="checkPassword()">입장하기</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav-bar">
+  <a href="index.html" class="home-btn" target="_self">🌳 고 가든</a>
+  
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="본문 단어 검색..." onkeypress="if(event.key === 'Enter') handleSearch()">
+    <button onclick="handleSearch()">찾기</button>
+  </div>
+</div>
+
+<div class="main-wrapper">
+  <nav class="sidebar">
+    <div class="sidebar-title">목차 (TOC)</div>
+    <a href="search.html"> 1 </a>
+    <a href="시험대비_머신러닝_핵심요약.md">Section 2</a>
+    <a href="#section-3">Section 3</a>
+    <a href="#section-4">Section 4</a>
+    <a href="#section-5">Section 5</a>
+    <a href="#section-6">Section 6</a>
+    <a href="#section-7">Section 7</a>
+  </nav>
+
+  <div class="content-card">
+    <div id="mainContent">
+      <p style="text-align:center; opacity:0.5; padding-top: 50px;">s3py.md 문서를 불러오는 중입니다... ☁️</p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// 밤 모드 감지 테마 세팅
+if (localStorage.getItem('theme') === 'night' || window.location.search.includes('theme=night')) {
+  document.body.classList.add('night');
+}
+
+// 🔑 비밀번호 체크 함수
+function checkPassword() {
+  const passwordInput = document.getElementById('pwInput').value;
+  const correctPassword = "1234"; // 여기에 사용할 비밀번호를 적으세요!
+
+  if (passwordInput === correctPassword) {
+    // 맞으면 모달을 부드럽게 사라지게 함
+    const overlay = document.getElementById('passwordOverlay');
+    overlay.style.opacity = '0';
+    overlay.style.visibility = 'hidden';
+    setTimeout(() => overlay.remove(), 500); // 0.5초 뒤 아예 DOM에서 삭제
+    
+    // 비밀번호가 맞은 시점에 파일 로드 시작
+    loadMarkdownData();
+  } else {
+    alert("❌ 비밀번호가 올바르지 않습니다!");
+    document.getElementById('pwInput').value = "";
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// 원본 HTML을 저장할 변수 (검색 초기화용)
+let originalHTML = "";
+
+// 🌟 마크다운 데이터 로드 함수 (비밀번호 통과 후 실행됨)
+function loadMarkdownData() {
+  fetch('s3py.md')
+    .then(response => {
+      if (!response.ok) throw new Error('s3py.md 파일을 찾을 수 없습니다.');
+      return response.text();
+    })
+    .then(markdownText => {
+      const htmlContent = marked.parse(markdownText);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      
+      let h1Count = 1;
+      tempDiv.querySelectorAll('h1').forEach(h1 => {
+        if (h1Count <= 7) {
+          h1.id = 'section-' + h1Count;
+          h1Count++;
+        }
+      });
+      
+      const container = document.getElementById('mainContent');
+      container.innerHTML = tempDiv.innerHTML;
+      originalHTML = container.innerHTML;
+    })
+    .catch(err => {
+      document.getElementById('mainContent').innerHTML = `<p style="color:red; text-align:center; padding-top:50px;">⚠️ 오류: ${err.message}</p>`;
+    });
+}
+
+// 🔍 단어 찾기 기능
+function handleSearch() {
+  const input = document.getElementById('searchInput').value.trim();
+  const activeTab = document.getElementById('mainContent');
+  
+  if (!input) {
+    activeTab.innerHTML = originalHTML;
+    return;
+  }
+  
+  activeTab.innerHTML = originalHTML;
+  const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`(?<!<[^>]*)${escapedInput}`, 'gi');
+  
+  if (!regex.test(activeTab.innerText)) {
+    alert("현재 본문에 찾는 단어가 없습니다! 🔍");
+    return;
+  }
+  
+  activeTab.innerHTML = activeTab.innerHTML.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+}
+</script>
+
+</body>
+</html>
