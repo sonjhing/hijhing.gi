@@ -303,3 +303,161 @@ print(os.listdir()) # 여기에 'train.csv'가 있는지 확인!
 *   **데이터 파일 확인:** 코드가 잘못된 경우보다 데이터 자체가 문제인 경우가 많습니다. 데이터가 안 불러와진다면 `import os` 후 `os.listdir()`을 실행하여 현재 경로에 파일이 실제로 존재하는지 확인하세요.
 *   **가중치 튜닝:** 만약 모델의 점수가 만족스럽지 않다면, `class_weight` 값을 조절하세요. 정답 데이터(`target=1`)가 매우 적다면 이 숫자를 7에서 10 또는 15로 키워보며 최적값을 찾으세요.
 *   **경고(Warning) 대처:** `ConvergenceWarning`이 발생한다면 반복 횟수가 부족한 것이므로 `max_iter`를 100에서 200으로 늘리거나 `learning_rate`를 낮추어 학습을 더 정교하게 만드세요.
+
+---
+
+## 💻 방법 3: 스케일링(StandardScaler) 및 5-Fold Stratified K-Fold + GridSearchCV 결합
+
+이 방법은 데이터의 크기(Scale)를 통일하는 전처리 과정과, 가장 정교한 교차 검증 방식(Stratified K-Fold)을 결합하여 성능의 안정성을 극대화하는 **발표/실무 최적화 모델링** 방식입니다.
+
+### 1. 데이터 불러오기 및 피처 선택 (Feature Selection)
+
+> 🎤 **발표 포인트 1: "왜 10개의 변수 중 5개만 선택했는가?"**
+> 10개의 변수(Feature)를 모두 사용하면 오히려 불필요한 노이즈가 끼어 모델의 예측력이 떨어질 수 있습니다. 
+> 따라서 랜덤포레스트(Random Forest) 알고리즘을 활용하여 **피처 중요도(Feature Importance)**를 먼저 평가했습니다. 
+> 예측에 가장 큰 도움을 주는 상위 5개의 핵심 변수만 선별함으로써, 모델을 가볍게 만들면서도 정확도는 극대화(과적합 방지)하는 전략을 취했습니다.
+
+```python
+import pandas as pd
+import numpy as np
+import joblib
+
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, f1_score
+
+# [1] 데이터 로드
+df = pd.read_csv("train.csv")
+
+TARGET = "target"
+X = df.drop(TARGET, axis=1) # 정답(target)을 제외한 10개의 특성
+y = df[TARGET]              # 정답(target)
+
+# [2] 변수 중요도 평가를 위한 임시 랜덤포레스트 모델 학습
+rf_importance = RandomForestClassifier(random_state=42)
+rf_importance.fit(X, y)
+
+# [3] 중요도 순으로 내림차순 정렬
+importance_df = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": rf_importance.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+# [4] 상위 5개의 피처명만 리스트로 추출 (5개 골라내기 완료)
+top_5_features = importance_df["Feature"].head(5).tolist()
+
+print("\n===== 선택된 5개 핵심 Feature =====")
+print(top_5_features)
+
+# 원본 데이터에서 상위 5개 변수만 남긴 데이터를 새롭게 구성
+X_selected = X[top_5_features]
+```
+
+### 2. 데이터 표준화 및 최고 성능 모델 학습 (그리드서치)
+
+> 🎤 **발표 포인트 2: "어떻게 96점 이상의 최적 성능을 달성했는가?"**
+> *   **데이터 표준화(Scaling):** 변수들 간의 단위나 값의 차이가 모델에 영향을 주지 않도록 `StandardScaler`를 적용하여 데이터의 스케일을 동일하게 맞추는 정밀 공정을 추가했습니다.
+> *   **모델 선정:** 수업 시간에 배운 가장 강력하고 안정적인 앙상블 기법인 랜덤포레스트를 메인 모델로 사용했습니다.
+> *   **그리드서치(GridSearch):** 단순히 모델을 한 번 학습시킨 것이 아닙니다. 트리의 개수, 가지치기 깊이, 그리고 데이터 불균형을 잡는 가중치 등을 컴퓨터가 수십 번 비교하며 스스로 **가장 완벽한 세팅(최적 파라미터)**을 찾도록 그리드서치를 적용했습니다.
+> *   **교차 검증(K-Fold):** 5-Fold 교차검증을 적용해 결과의 신뢰성을 높였으며, 이렇게 찾은 단 하나의 ‘가장 똑똑한 모델’과 ‘스케일러’를 별도로 저장하여 실전(시험)에 대비했습니다.
+
+```python
+# [1] 선택된 5개 Feature에 대해 데이터 표준화(Scaling) 진행
+scaler = StandardScaler()
+X_selected_scaled = scaler.fit_transform(X_selected)
+
+# [2] 머신러닝이 탐색할 경우의 수(파라미터 그리드) 설정
+param_grid = {
+    'n_estimators': [100, 200, 300], # 만들 트리의 개수
+    'max_depth': [5, 8, 10, None],   # 트리의 최대 깊이 (과적합 방지 역할)
+    'class_weight': ['balanced', {0: 1, 1: 5}, {0: 1, 1: 7}], # 타겟 불균형을 해결하기 위한 가중치 (고득점의 핵심)
+    'min_samples_split': [2, 5]      # 노드를 분할하기 위한 최소 샘플 수
+}
+
+# [3] K-Fold 교차검증 세팅 (데이터를 5등분하여 돌아가며 검증, Stratified는 정답 비율을 유지해줌)
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+rf = RandomForestClassifier(random_state=42)
+
+# [4] 그리드서치 모델 세팅 및 학습 (최적의 조합 찾기 돌입!)
+grid_search = GridSearchCV(
+    estimator=rf,
+    param_grid=param_grid,
+    cv=cv,
+    scoring='f1_macro', # 평가 기준을 감점 조건인 f1_macro로 설정
+    n_jobs=-1,
+    verbose=1
+)
+
+print("\nGridSearchCV를 통해 최적의 파라미터 조합을 찾는 중입니다...")
+# 스케일링 된 데이터로 학습 진행!
+grid_search.fit(X_selected_scaled, y)
+
+# [5] 찾은 모델 중 가장 우수한 '단 1개의 모델'을 최종 선택
+best_model = grid_search.best_estimator_
+
+print("\n===== 도출된 최고 성능의 파라미터 =====")
+print(grid_search.best_params_)
+
+# 학습 데이터로 성능 점검 (스케일링 된 데이터 입력)
+pred_full = best_model.predict(X_selected_scaled)
+print("\n===== Train Data 성능 결과 리포트 =====")
+print(classification_report(y, pred_full))
+
+# [6] 최종 모델, 스케일러, 선택했던 5개의 피처 목록을 따로 저장하여 보관
+joblib.dump(best_model, "best_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+joblib.dump(top_5_features, "selected_features.pkl")
+
+print("\n▶ 성공적으로 최적 모델(best_model.pkl), 스케일러(scaler.pkl), 피처(selected_features.pkl)가 저장되었습니다!")
+```
+
+### 3. 시험 당일 테스트 코드 (실제 서비스 적용)
+
+> 🎤 **발표 포인트 3: "테스트 데이터를 위한 환경 구축 및 자동화"**
+> 아무리 모델이 좋아도, 시험 당일 입력되는 데이터 포맷이나 스케일이 다르면 오류가 납니다. 
+> 이를 막기 위해 저장해두었던 5개의 핵심 피처명(`selected_features.pkl`)과 데이터 표준화 도구(`scaler.pkl`)를 다시 불러옵니다. 
+> 시험용 새로운 데이터가 들어오면, 자동으로 이 5개의 피처만 찾아 추출하고, 학습 때와 동일하게 스케일링하는 **‘환경’을 완벽하게 구축**했습니다. 
+> 최종적으로 저장된 최우수 모델을 통해 실시간 예측을 구동하고, 목표치 달성을 증명하기 위해 요구된 classification_report를 바로 출력하여 점수 조건을 충족합니다.
+
+```python
+import pandas as pd
+import joblib
+import os
+from sklearn.metrics import classification_report
+
+if os.path.exists("test.csv"):
+    # [1] 저장해둔 최적 모델, 스케일러, 5개의 피처 목록 불러오기
+    model = joblib.load("best_model.pkl")
+    scaler = joblib.load("scaler.pkl")
+    features = joblib.load("selected_features.pkl")
+
+    # [2] 시험 당일 새로운 데이터(test.csv)가 주어짐
+    test_df = pd.read_csv("test.csv")
+
+    # [3] 테스트 환경 자동 구축:
+    # 1. 모델이 학습할 때 썼던 똑같은 5개의 컬럼만 알아서 추출해줍니다.
+    X_test = test_df[features]
+    
+    # 2. 추출된 데이터에 학습 때 썼던 동일한 스케일러를 적용합니다.
+    X_test_scaled = scaler.transform(X_test)
+
+    # [4] 모델 실시간 구동 및 예측
+    pred = model.predict(X_test_scaled)
+
+    print("\n===== 예측 결과 (모델이 판단한 정답) =====")
+    print(pred)
+
+    # [5] 타겟이 있는 경우 기말 점수 조건에 맞는 리포트 출력
+    if "target" in test_df.columns:
+        # 교수님(평가자)이 제시한 '테스트용_target' 변수명을 명확히 사용
+        테스트용_target = test_df["target"]
+
+        print("\n===== 최종 성능 평가 (Classification Report) =====")
+        
+        # 감점을 당하지 않기 위한 필수 리포트 출력
+        print(classification_report(테스트용_target, pred))
+else:
+    print("test.csv 파일이 없습니다. 시험 당일 test.csv 파일이 제공되면 이 셀을 실행하여 바로 점수를 확인하세요.")
+```
