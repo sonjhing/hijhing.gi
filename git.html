@@ -307,6 +307,7 @@ body.night .content-card code { background: rgba(255,255,255,0.1); }
     <a href="#" onclick="loadMarkdownData('se5.md'); return false;"> 5 (비상 매뉴얼) </a>
     <a href="#" onclick="loadMarkdownData('sin6.md'); return false;"> 6 (신용카드) </a>
     <a href="recommender.html"> 7 (모델 추천기) </a>
+    <a href="#" onclick="loadPipelineBuilder(); return false;" style="color:var(--accent); font-weight:900;"> 8 (파이프라인 빌더 ⚙️) </a>
   </nav>
 
   <div class="content-card">
@@ -398,6 +399,171 @@ function handleSearch() {
   }
   
   activeTab.innerHTML = activeTab.innerHTML.replace(regex, (match) => `<span class="highlight">${match}</span>`);
+}
+
+// ⚙️ AutoML 파이프라인 빌더 렌더링 함수
+function loadPipelineBuilder() {
+  const container = document.getElementById('mainContent');
+  
+  const builderHTML = `
+    <h1>⚙️ AI 파이프라인 자동화 빌더</h1>
+    <p>변수 선택부터 실제 서비스 환경 구축까지, 클릭만으로 나만의 완벽한 <strong>실전 파이썬 코드</strong>를 생성하세요!</p>
+    
+    <div style="background:var(--input-bg); padding:25px; border-radius:16px; margin-top:20px; border:2px solid var(--accent); box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+      <h3 style="margin-top:0; color:var(--accent);">Step 1. 변수 선택 (Feature Selection)</h3>
+      <div style="margin-bottom:20px;">
+        <label style="font-weight:700;">추출할 핵심 피처(변수) 개수:</label>
+        <input type="number" id="pb_features" value="5" min="1" max="15" style="width:80px; padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.2); margin-left:10px;"> 개
+      </div>
+
+      <h3 style="color:var(--accent);">Step 2. 최적 모델 탐색 (GridSearchCV)</h3>
+      <div style="margin-bottom:10px;">
+        <label style="font-weight:700; display:inline-block; width:180px;">그리드서치 탐색 강도:</label>
+        <select id="pb_depth" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.2);">
+          <option value="light">가볍게 (시험용 추천, 빠름)</option>
+          <option value="heavy">정밀하게 (점수 극대화, 오래걸림)</option>
+        </select>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="font-weight:700; display:inline-block; width:180px;">데이터 불균형 가중치:</label>
+        <select id="pb_weight" style="padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.2);">
+          <option value="balanced">자동 맞춤 (balanced)</option>
+          <option value="{0: 1, 1: 5}">1:5 가중치</option>
+          <option value="{0: 1, 1: 7}">1:7 가중치 (추천)</option>
+          <option value="{0: 1, 1: 10}">1:10 가중치 (불균형 극심할 때)</option>
+        </select>
+      </div>
+
+      <h3 style="color:var(--accent);">Step 3. 서비스 환경 구축 (Deployment)</h3>
+      <div style="margin-bottom:20px;">
+        <label style="font-weight:700;">시험장 평가용 데이터 파일명:</label>
+        <input type="text" id="pb_filename" value="test.csv" style="width:200px; padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.2); margin-left:10px;">
+      </div>
+
+      <button onclick="generatePipelineCode()" style="width:100%; padding:15px; border-radius:12px; background:var(--accent); color:#fff; font-size:1.1rem; font-weight:900; border:none; cursor:pointer; margin-top:10px; box-shadow:0 5px 15px rgba(79, 191, 106, 0.3);">
+        🚀 완벽한 파이썬 코드 생성하기!
+      </button>
+    </div>
+
+    <div id="generatedCodeArea" style="margin-top:30px; display:none;">
+      <h2>✅ 당신만의 파이프라인 완성본</h2>
+      <p>아래 코드를 복사하여 Jupyter Notebook 셀에 차례대로 붙여넣고 실행하세요.</p>
+      <pre><code id="generatedCode" style="display:block; padding:15px; font-family:'Courier New', Courier, monospace; overflow-x:auto; line-height:1.5;"></code></pre>
+    </div>
+  `;
+  
+  container.innerHTML = builderHTML;
+  originalHTML = builderHTML; // 검색 초기화용 저장
+}
+
+// ⚙️ 파이프라인 코드 생성기 로직
+function generatePipelineCode() {
+  const featCount = document.getElementById('pb_features').value;
+  const depth = document.getElementById('pb_depth').value;
+  const weight = document.getElementById('pb_weight').value;
+  const testFile = document.getElementById('pb_filename').value;
+
+  let depthParams = "";
+  if (depth === "light") {
+    depthParams = "'n_estimators': [100, 200],\n    'max_depth': [5, 8]";
+  } else {
+    depthParams = "'n_estimators': [100, 200, 300],\n    'max_depth': [5, 8, 10, None]";
+  }
+
+  let weightStr = weight === "balanced" ? "'balanced'" : weight;
+
+  const pythonCode = `import pandas as pd
+import numpy as np
+import joblib
+import os
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, f1_score
+
+# ==========================================
+# [Step 1] 데이터 로드 및 피처 중요도 분석
+# ==========================================
+df = pd.read_csv("train.csv")
+TARGET = "target"
+X = df.drop(TARGET, axis=1)
+y = df[TARGET]
+
+rf_importance = RandomForestClassifier(random_state=42)
+rf_importance.fit(X, y)
+
+importance_df = pd.DataFrame({
+    "Feature": X.columns,
+    "Importance": rf_importance.feature_importances_
+}).sort_values(by="Importance", ascending=False)
+
+# 상위 ${featCount}개의 핵심 피처만 골라냅니다!
+top_features = importance_df["Feature"].head(${featCount}).tolist()
+print("선택된 핵심 Feature:", top_features)
+
+X_selected = X[top_features]
+
+# ==========================================
+# [Step 2] 스케일링 & GridSearchCV 최적 모델 탐색
+# ==========================================
+scaler = StandardScaler()
+X_selected_scaled = scaler.fit_transform(X_selected)
+
+param_grid = {
+    ${depthParams},
+    'class_weight': [${weightStr}]
+}
+
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+rf = RandomForestClassifier(random_state=42)
+
+grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=cv, scoring='f1_macro', n_jobs=-1)
+grid_search.fit(X_selected_scaled, y)
+
+best_model = grid_search.best_estimator_
+print("찾아낸 최고의 파라미터:", grid_search.best_params_)
+
+joblib.dump(best_model, "best_model.pkl")
+joblib.dump(scaler, "scaler.pkl")
+joblib.dump(top_features, "selected_features.pkl")
+print("▶ 모델, 스케일러, 피처 목록 저장 완료!")
+
+# ==========================================
+# [Step 3] 실제 서비스 환경 구축 (테스트 및 배포)
+# ==========================================
+if os.path.exists("${testFile}"):
+    test_df = pd.read_csv("${testFile}")
+    
+    # 저장해둔 피처와 스케일러로 똑같이 환경 세팅
+    X_test = test_df[joblib.load("selected_features.pkl")]
+    X_test_scaled = joblib.load("scaler.pkl").transform(X_test)
+    
+    # 실시간 예측!
+    pred = joblib.load("best_model.pkl").predict(X_test_scaled)
+    
+    if TARGET in test_df.columns:
+        print("===== 최종 채점 성적표 =====")
+        print(classification_report(test_df[TARGET], pred))
+        print(f"최종 기말 점수: {f1_score(test_df[TARGET], pred, average='macro'):.4f}")
+    
+    # 제출 파일 저장
+    pd.DataFrame({'prediction': pred}).to_csv("submission.csv", index=False)
+    print("제출 파일 생성 완료!")
+else:
+    print("${testFile} 파일이 없어서 테스트를 건너뜁니다.")
+`;
+
+  // 태그 인코딩
+  const encodedCode = pythonCode.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  
+  const codeArea = document.getElementById('generatedCodeArea');
+  const codeBlock = document.getElementById('generatedCode');
+  
+  codeBlock.innerHTML = encodedCode;
+  codeArea.style.display = 'block';
+  
+  // 부드럽게 스크롤
+  codeArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 </script>
 
