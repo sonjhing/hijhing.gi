@@ -81,6 +81,15 @@ b₃ × 과외여부
 
 # 실습 : 공부시간, 학원수, 과외여부를 이용한 시험점수 예측
 
+```python
+## 0) 구글 코랩
+
+!sudo apt-get install -y fonts-nanum
+!sudo fc-cache -fv
+!rm ~/.cache/matplotlib -rf
+```
+
+---
 ## 1) 데이터 로드
 
 ```python
