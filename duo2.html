@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Python Baking Land - 파이썬 베이킹 랜드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Confetti Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        duoGreen: '#58cc02',
+                        duoGreenHover: '#46a302',
+                        duoYellow: '#ffc800',
+                        duoRed: '#ff4b4b',
+                        duoBlue: '#1cb0f6',
+                        duoGray: '#e5e5e5',
+                        bakeryCream: '#fffbf0',
+                        bakeryWarm: '#fdf6e7',
+                        bakeryBrown: '#8b5a2b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            touch-action: manipulation;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #ffffff;
+            color: #4b4b4b;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .safe-top {
+            padding-top: calc(env(safe-area-inset-top, 0px) + 6px);
+        }
+        .safe-bottom {
+            padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        }
+
+        /* 두툼해진 3D 볼륨 버튼 (그림자 10px로 확장) */
+        .btn-duo-green {
+            background-color: #58cc02;
+            box-shadow: 0 10px 0 0 #459f02;
+            transition: all 0.08s ease;
+        }
+        .btn-duo-green:active:not(:disabled) {
+            transform: translateY(8px);
+            box-shadow: 0 2px 0 0 #459f02;
+        }
+
+        .btn-duo-yellow {
+            background-color: #ffc800;
+            box-shadow: 0 8px 0 0 #d8a900;
+            transition: all 0.08s ease;
+        }
+        .btn-duo-yellow:active:not(:disabled) {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 0 #d8a900;
+        }
+
+        .btn-duo-gray {
+            background-color: #e5e5e5;
+            box-shadow: 0 8px 0 0 #cdcdcd;
+            transition: all 0.08s ease;
+        }
+
+        .btn-duo-white {
+            background-color: #ffffff;
+            box-shadow: 0 8px 0 0 #e5e5e5;
+            border: 3px solid #e5e5e5;
+            transition: all 0.08s ease;
+        }
+        .btn-duo-white:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 0 #e5e5e5;
+        }
+
+        /* 큼직해진 로드맵 노드 (68px -> 80px, 그림자 10px) */
+        .map-node {
+            width: 80px;
+            height: 80px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.85rem;
+            cursor: pointer;
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+            position: relative;
+        }
+        .map-node-active {
+            background-color: #58cc02;
+            box-shadow: 0 10px 0 0 #459f02;
+            color: #ffffff;
+        }
+        .map-node-active:active {
+            transform: translateY(8px);
+            box-shadow: 0 2px 0 0 #459f02;
+        }
+        .map-node-cleared {
+            background-color: #ffc800;
+            box-shadow: 0 10px 0 0 #d8a900;
+            color: #ffffff;
+        }
+        .map-node-cleared:active {
+            transform: translateY(8px);
+            box-shadow: 0 2px 0 0 #d8a900;
+        }
+        .map-node-locked {
+            background-color: #e5e5e5;
+            box-shadow: 0 8px 0 0 #cdcdcd;
+            color: #b0b0b0;
+            cursor: not-allowed;
+        }
+
+        /* 펄스 링 크기 확장 (+14px) */
+        .ring-pulse {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 9999px;
+            border: 5px dashed #58cc02;
+            animation: spin-slow 10s linear infinite;
+        }
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .bubble-start {
+            position: absolute;
+            top: -46px;
+            background: #ffffff;
+            border: 3px solid #e5e5e5;
+            color: #58cc02;
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 5px 14px;
+            border-radius: 14px;
+            box-shadow: 0 6px 10px rgba(0,0,0,0.08);
+            white-space: nowrap;
+            animation: float-y 1.4s ease-in-out infinite alternate;
+            z-index: 10;
+        }
+        .bubble-start::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 7px 6px 0;
+            border-style: solid;
+            border-color: #ffffff transparent transparent transparent;
+        }
+        @keyframes float-y {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+
+        .code-box {
+            font-family: 'Consolas', 'Menlo', 'Monaco', monospace;
+            white-space: pre-wrap;
+        }
+
+        .mobile-scroll {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: contain;
+        }
+    </style>
+</head>
+<body class="w-full h-full flex flex-col justify-between">
+
+    <!-- 스마트폰 100% 풀스크린 래퍼 -->
+    <div class="w-full h-full flex flex-col justify-between overflow-hidden relative">
+        
+        <!-- 상단 헤더 -->
+        <header class="w-full bg-white px-5 py-3.5 border-b-4 border-duoGray flex items-center justify-between z-30 shrink-0 safe-top">
+            <div class="flex items-center gap-2.5">
+                <span class="text-3xl">🥐</span>
+                <div>
+                    <div class="text-[11px] font-black text-amber-700 uppercase tracking-wide" id="current-unit-badge">초급 ~ 중급</div>
+                    <div class="text-sm font-black text-gray-800" id="current-chapter-title">점프 투 파이썬 마스터</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 font-black text-amber-600 text-sm">
+                    <i class="fa-solid fa-wheat-awn text-base"></i>
+                    <span id="stat-flour">180</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-black text-duoYellow text-sm">
+                    <i class="fa-solid fa-coins text-base"></i>
+                    <span id="stat-coins">350</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-black text-duoRed text-sm">
+                    <i class="fa-solid fa-heart text-base animate-pulse"></i>
+                    <span id="stat-lives">5</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ============================================== -->
+        <!-- [1] TAB: 학습 지도 로드맵 -->
+        <!-- ============================================== -->
+        <section id="tab-map" class="flex-1 overflow-y-auto px-5 py-6 flex flex-col items-center bg-bakeryCream relative mobile-scroll">
+            
+            <div class="w-full max-w-sm bg-white border-4 border-amber-200 rounded-3xl p-4 mb-8 shadow-sm flex items-center gap-3.5">
+                <div class="w-14 h-14 bg-amber-100 border-2 border-amber-300 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-inner">
+                    👨‍🍳
+                </div>
+                <div>
+                    <div class="text-xs font-black text-amber-600">마스터 파이의 오븐 특강</div>
+                    <div id="master-greeting" class="text-xs sm:text-sm font-bold text-gray-700 leading-snug">
+                        "기초 자료형부터 라이브러리까지 든든하게 구워봅시다!"
+                    </div>
+                </div>
+            </div>
+
+            <div id="roadmap-container" class="w-full max-w-xs flex flex-col items-center gap-9 pb-28 relative">
+                <!-- JS 생성 -->
+            </div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- [2] TAB: 퀴즈 풀이 화면 -->
+        <!-- ============================================== -->
+        <section id="tab-quiz" class="flex-1 flex flex-col justify-between hidden bg-white px-5 pt-5 pb-32 overflow-y-auto mobile-scroll">
+            <!-- 두툼해진 프로그레스 바 (h-6) -->
+            <div class="w-full flex items-center gap-3.5 mb-5">
+                <button onclick="closeQuizView()" class="text-gray-400 hover:text-gray-600 text-xl p-1.5">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+                <div class="flex-1 bg-duoGray h-6 rounded-full overflow-hidden shadow-inner p-1">
+                    <div id="quiz-progress-bar" class="bg-duoGreen h-full rounded-full transition-all duration-300 shadow-sm" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3 bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5 mb-4">
+                <div class="w-11 h-11 bg-amber-400 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-sm">👨‍🍳</div>
+                <div id="quiz-mascot-hint" class="text-xs sm:text-sm font-bold text-amber-900 leading-snug">"신중하게 코드를 골라 완벽한 반죽을 만들어봐요!"</div>
+            </div>
+
+            <div id="quiz-card-body" class="flex-1 flex flex-col justify-center py-2"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- [3] TAB: 내 베이커리 -->
+        <!-- ============================================== -->
+        <section id="tab-bakery" class="flex-1 overflow-y-auto hidden bg-bakeryWarm px-5 py-6 pb-28 mobile-scroll">
+            <div class="bg-white border-4 border-amber-200 rounded-3xl p-5 mb-5 shadow-sm">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-lg font-black text-gray-800">🥖 마스터 파이 베이커리</h2>
+                        <p class="text-xs text-gray-500">코딩으로 모은 밀가루와 코인으로 파이를 구워보세요!</p>
+                    </div>
+                    <span class="text-xs font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                        Lv.<span id="bakery-lvl-text">1</span>
+                    </span>
+                </div>
+                <div class="bg-amber-50 rounded-2xl p-3 flex items-center justify-between border-2 border-amber-200">
+                    <div class="text-xs font-bold text-gray-700">오븐 가동률: <span class="text-duoGreen font-black">100% 정상</span></div>
+                    <button onclick="upgradeBakery()" class="px-4 py-2 btn-duo-yellow text-amber-950 font-black text-xs rounded-xl">
+                        오븐 확장 (250🪙)
+                    </button>
+                </div>
+            </div>
+
+            <h3 class="font-black text-sm text-gray-700 mb-3 px-1">🥐 파이 쇼케이스</h3>
+            <div id="pie-shelf-grid" class="grid grid-cols-2 gap-3.5 pb-8"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- [4] TAB: 베이커 순위표 -->
+        <!-- ============================================== -->
+        <section id="tab-leaderboard" class="flex-1 overflow-y-auto hidden bg-white px-5 py-6 pb-28 mobile-scroll">
+            <div class="flex items-center gap-3.5 bg-amber-50 border-4 border-amber-200 rounded-3xl p-4 mb-5 shadow-sm">
+                <div class="text-3xl">🏆</div>
+                <div>
+                    <h2 class="text-base font-black text-gray-800">전국 베이커 코딩 랭킹</h2>
+                    <p class="text-xs text-gray-500">모듈과 라이브러리를 다루는 베이커들의 명예의 전당</p>
+                </div>
+            </div>
+            <div id="leaderboard-items" class="flex flex-col gap-3"></div>
+        </section>
+
+        <!-- ============================================== -->
+        <!-- 하단 피드백 바텀시트 (볼륨 두툼화) -->
+        <!-- ============================================== -->
+        <div id="feedback-sheet" class="hidden absolute bottom-0 left-0 right-0 p-6 rounded-t-[36px] border-t-4 z-40 flex-col gap-4 shadow-2xl safe-bottom">
+            <div class="flex items-center gap-3.5">
+                <div id="feedback-icon" class="w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl font-black shadow-md"></div>
+                <div>
+                    <h3 id="feedback-title" class="font-black text-base"></h3>
+                    <p id="feedback-desc" class="text-xs sm:text-sm font-semibold text-gray-600 mt-0.5 leading-snug"></p>
+                </div>
+            </div>
+            <button id="btn-next-step" onclick="proceedNextLesson()" class="w-full py-4 rounded-2xl text-white font-black text-base btn-duo-green">
+                계속하기
+            </button>
+        </div>
+
+        <!-- 퀴즈 하단 확인 고정 버튼 (두툼화) -->
+        <div id="quiz-check-bar" class="hidden absolute bottom-0 left-0 right-0 p-5 bg-white/95 backdrop-blur-sm border-t-4 border-duoGray z-30 safe-bottom">
+            <button id="btn-check-answer" onclick="checkUserAnswer()" disabled class="w-full py-4 rounded-2xl text-gray-400 font-black text-base btn-duo-gray cursor-not-allowed">
+                정답 확인하기
+            </button>
+        </div>
+
+        <!-- 하단 네비게이션 바 (두께 및 터치영역 확대) -->
+        <nav id="global-navbar" class="w-full bg-white border-t-4 border-duoGray px-8 py-3 flex justify-between items-center z-20 shrink-0 safe-bottom">
+            <button onclick="switchGlobalTab('map')" id="nav-btn-map" class="flex flex-col items-center text-duoGreen">
+                <i class="fa-solid fa-map-location-dot text-2xl"></i>
+                <span class="text-xs font-black mt-1">학습길</span>
+            </button>
+            <button onclick="switchGlobalTab('bakery')" id="nav-btn-bakery" class="flex flex-col items-center text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-cookie-bite text-2xl"></i>
+                <span class="text-xs font-black mt-1">내 베이커리</span>
+            </button>
+            <button onclick="switchGlobalTab('leaderboard')" id="nav-btn-leaderboard" class="flex flex-col items-center text-gray-400 hover:text-gray-600">
+                <i class="fa-solid fa-ranking-star text-2xl"></i>
+                <span class="text-xs font-black mt-1">순위표</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        const courseCurriculum = [
+            {
+                chapterId: "02-1",
+                chapterTitle: "숫자형",
+                icon: "fa-calculator",
+                speech: "빵 반죽 무게를 나눌 때 쓰는 나눗셈 연산자예요!",
+                prompt: "7을 3으로 나눈 '나머지(remainder)'를 구하는 올바른 연산자는?",
+                type: "fill-blank",
+                codeSlot: "remainder = 7 _____ 3  # 결과: 1",
+                options: ["%", "//", "/", "**"],
+                correct: "%",
+                explanation: "`%` 연산자는 나눗셈 후 나머지를 반환합니다. (몫은 `//`)"
+            },
+            {
+                chapterId: "02-2",
+                chapterTitle: "문자열 자료형",
+                icon: "fa-font",
+                speech: "문자열 포매팅으로 빵 이름을 깔끔하게 꾸며봐요.",
+                prompt: "다음 중 파이썬 3.6+ f-string 포매팅 문법으로 올바른 것은?",
+                type: "multiple-choice",
+                options: [
+                    "f\"오늘은 {name} 빵을 구워요\"",
+                    "\"오늘은 {name} 빵을 구워요\".format",
+                    "format(\"오늘은 name 빵을 구워요\")",
+                    "f(\"오늘은 name 빵을 구워요\")"
+                ],
+                correct: "f\"오늘은 {name} 빵을 구워요\"",
+                explanation: "문자열 앞에 `f`를 붙이고 변수를 `{변수명}`으로 감싸는 f-string이 가장 직관적입니다."
+            },
+            {
+                chapterId: "02-3",
+                chapterTitle: "리스트 자료형",
+                icon: "fa-list-ol",
+                speech: "재료 목록 맨 뒤에 새로운 재료를 추가하는 메서드예요!",
+                prompt: "리스트 `pies`의 맨 마지막에 '초코파이'를 추가하는 메서드는?",
+                type: "fill-blank",
+                codeSlot: "pies._____(\"초코파이\")",
+                options: ["append", "insert", "add", "push"],
+                correct: "append",
+                explanation: "파이썬 리스트 끝에 요소를 추가할 때는 `append()` 메서드를 사용합니다."
+            },
+            {
+                chapterId: "02-4",
+                chapterTitle: "튜플 자료형",
+                icon: "fa-lock",
+                speech: "절대 변하면 안 되는 황금 레시피 비율은 튜플에 담아요!",
+                prompt: "튜플(Tuple)의 핵심 특징으로 올바른 설명을 고르세요.",
+                type: "multiple-choice",
+                options: [
+                    "요소값을 수정하거나 삭제할 수 없다.",
+                    "요소 순서가 없어서 인덱싱이 불가능하다.",
+                    "대괄호 []를 이용해 선언한다.",
+                    "중복된 값을 절대 가질 수 없다."
+                ],
+                correct: "요소값을 수정하거나 삭제할 수 없다.",
+                explanation: "튜플은 리스트와 유사하지만 요소를 변경(수정/삭제)할 수 없는 불변(immutable) 객체입니다."
+            },
+            {
+                chapterId: "02-5",
+                chapterTitle: "딕셔너리 자료형",
+                icon: "fa-book-atlas",
+                speech: "빵 이름(Key)과 가격(Value)을 한 쌍으로 묶어볼까요?",
+                prompt: "딕셔너리에서 모든 'Key(키)' 목록만 리스트 형태로 뽑아내는 함수는?",
+                type: "fill-blank",
+                codeSlot: "menu = {\"애플파이\": 3000}\nkeys = menu._____()",
+                options: ["keys", "values", "items", "get"],
+                correct: "keys",
+                explanation: "`keys()`는 딕셔너리의 Key들을 반환합니다. (값은 `values()`, 쌍은 `items()`)"
+            },
+            {
+                chapterId: "02-6",
+                chapterTitle: "집합 자료형",
+                icon: "fa-shapes",
+                speech: "중복된 재료를 걸러낼 때 집합(set)이 마법을 부립니다!",
+                prompt: "파이썬 `set([1, 2, 2, 3, 3])`의 결과값으로 올바른 것은?",
+                type: "multiple-choice",
+                options: ["{1, 2, 3}", "[1, 2, 3]", "(1, 2, 3)", "{1: 2, 2: 3}"],
+                correct: "{1, 2, 3}",
+                explanation: "집합(set)은 중복을 허용하지 않고 순서가 없는 자료형입니다."
+            },
+            {
+                chapterId: "02-7",
+                chapterTitle: "불 자료형",
+                icon: "fa-toggle-on",
+                speech: "참과 거짓! 오븐 타이머가 끝났는지 확인할 때 쓰여요.",
+                prompt: "다음 중 파이썬에서 `False`로 취급되는 값은 무엇일까요?",
+                type: "multiple-choice",
+                options: ["\"\"", "\"False\"", "[0]", "1"],
+                correct: "\"\"",
+                explanation: "빈 문자열 `\"\"`, 빈 리스트 `[]`, 숫자 0, `None`은 거짓(False)으로 평가됩니다."
+            },
+            {
+                chapterId: "02-8",
+                chapterTitle: "변수",
+                icon: "fa-box-archive",
+                speech: "두 변수의 값을 한 줄로 스마트하게 맞바꿔 볼까요?",
+                prompt: "파이썬에서 `a`와 `b`의 값을 서로 교환(swap)하는 가장 우아한 방법은?",
+                type: "multiple-choice",
+                options: [
+                    "a, b = b, a",
+                    "a = b; b = a",
+                    "swap(a, b)",
+                    "temp = a; a = b"
+                ],
+                correct: "a, b = b, a",
+                explanation: "파이썬에서는 `a, b = b, a` 구문으로 직관적인 변수 스왑이 가능합니다."
+            },
+            {
+                chapterId: "03-1",
+                chapterTitle: "if문",
+                icon: "fa-code-branch",
+                speech: "여러 조건 중 하나를 검사할 때 쓰는 다중 조건 키워드!",
+                prompt: "파이썬에서 else if 대신 사용하는 올바른 키워드는?",
+                type: "fill-blank",
+                codeSlot: "if score >= 90: pass\n_____ score >= 80: pass",
+                options: ["elif", "else if", "elseif", "case"],
+                correct: "elif",
+                explanation: "파이썬에서는 다중 조건 분기를 위해 `elif`를 사용합니다."
+            },
+            {
+                chapterId: "03-2",
+                chapterTitle: "while문",
+                icon: "fa-arrows-rotate",
+                speech: "반죽이 타지 않도록 반복문을 강제로 탈출해야 해요!",
+                prompt: "while 반복문을 즉시 중단하고 빠져나오는 키워드는?",
+                type: "fill-blank",
+                codeSlot: "while True:\n    if burnt: _____",
+                options: ["break", "continue", "pass", "exit"],
+                correct: "break",
+                explanation: "`break` 키워드는 반복 루프를 즉시 종료시킵니다."
+            },
+            {
+                chapterId: "03-3",
+                chapterTitle: "for문",
+                icon: "fa-repeat",
+                speech: "1부터 5까지 오븐 트레이 번호를 순서대로 순회해 볼까요?",
+                prompt: "1부터 5까지 순회할 때 사용하는 `range()` 함수의 올바른 인자 구성은?",
+                type: "multiple-choice",
+                options: ["range(1, 6)", "range(1, 5)", "range(5)", "range(0, 5)"],
+                correct: "range(1, 6)",
+                explanation: "`range(start, stop)`은 start부터 stop-1까지 생성하므로 1~5는 `range(1, 6)`입니다."
+            },
+            {
+                chapterId: "04-1",
+                chapterTitle: "함수",
+                icon: "fa-cube",
+                speech: "나만의 파이 굽기 함수를 정의하는 시작 키워드예요!",
+                prompt: "파이썬에서 함수를 정의(선언)할 때 사용하는 키워드는?",
+                type: "fill-blank",
+                codeSlot: "_____ bake_pie(flour, butter):\n    return \"맛있는 파이\"",
+                options: ["def", "function", "fn", "fun"],
+                correct: "def",
+                explanation: "파이썬 함수 정의는 `def` 키워드로 시작합니다."
+            },
+            {
+                chapterId: "04-2",
+                chapterTitle: "사용자 입출력",
+                icon: "fa-keyboard",
+                speech: "손님에게 주문을 직접 입력받을 때 쓰는 함수입니다.",
+                prompt: "콘솔에서 사용자로부터 문자열 입력을 받는 표준 내장 함수는?",
+                type: "fill-blank",
+                codeSlot: "order = _____(\"원하는 빵을 입력하세요: \")",
+                options: ["input", "scanf", "read", "print"],
+                correct: "input",
+                explanation: "`input()` 함수는 키보드로 입력한 값을 문자열 형태로 반환합니다."
+            },
+            {
+                chapterId: "04-3",
+                chapterTitle: "파일 읽고 쓰기",
+                icon: "fa-file-lines",
+                speech: "비밀 레시피 노트를 열고 작업이 끝나면 자동으로 닫아줘요!",
+                prompt: "파일을 열고 블록 종료 시 `f.close()`를 자동으로 처리해주는 문법은?",
+                type: "fill-blank",
+                codeSlot: "_____ open(\"recipe.txt\", \"w\") as f:\n    f.write(\"버터 100g\")",
+                options: ["with", "for", "using", "try"],
+                correct: "with",
+                explanation: "`with open(...) as f:` 구문은 파일 작업을 마치면 안전하게 자동으로 닫아줍니다."
+            },
+            {
+                chapterId: "04-4",
+                chapterTitle: "프로그램의 입출력",
+                icon: "fa-terminal",
+                speech: "터미널 명령행에서 매개변수를 직접 전달받아 볼까요?",
+                prompt: "터미널 명령행 인자(sys.argv)를 다루기 위해 임포트해야 하는 표준 모듈은?",
+                type: "fill-blank",
+                codeSlot: "import _____\nargs = sys.argv[1:]",
+                options: ["sys", "os", "terminal", "arg"],
+                correct: "sys",
+                explanation: "`sys.argv`를 사용하면 실행 시 전달된 인자 목록을 얻을 수 있습니다."
+            },
+            {
+                chapterId: "05-1",
+                chapterTitle: "클래스",
+                icon: "fa-cubes-stacked",
+                speech: "클래스를 바탕으로 찍어낸 객체의 초기화 메서드 이름은?",
+                prompt: "파이썬 클래스의 인스턴스 생성자(초기화 메서드) 이름은?",
+                type: "fill-blank",
+                codeSlot: "class Bakery:\n    def _____(self, name):\n        self.name = name",
+                options: ["__init__", "__new__", "constructor", "create"],
+                correct: "__init__",
+                explanation: "파이썬 객체 생성 시 자동 호출되는 초기화 메서드는 `__init__` 입니다."
+            },
+            {
+                chapterId: "05-2",
+                chapterTitle: "모듈",
+                icon: "fa-puzzle-piece",
+                speech: "다른 사람이 구워둔 파이썬 코드 파일(.py)을 불러와요!",
+                prompt: "외부 또는 같은 디렉터리의 `recipe.py` 모듈을 불러올 때 쓰는 키워드는?",
+                type: "fill-blank",
+                codeSlot: "_____ recipe\nrecipe.bake()",
+                options: ["import", "include", "require", "using"],
+                correct: "import",
+                explanation: "모듈을 불러올 때는 `import` 키워드를 사용합니다."
+            },
+            {
+                chapterId: "05-3",
+                chapterTitle: "패키지",
+                icon: "fa-box-open",
+                speech: "여러 모듈을 폴더 구조로 묶어둔 디렉터리를 가리켜요.",
+                prompt: "해당 디렉터리가 파이썬 패키지임을 알리던 기본 파일명은?",
+                type: "multiple-choice",
+                options: ["__init__.py", "__main__.py", "package.json", "index.py"],
+                correct: "__init__.py",
+                explanation: "디렉터리 내에 `__init__.py` 파일이 있으면 패키지로 인식됩니다."
+            },
+            {
+                chapterId: "05-4",
+                chapterTitle: "예외 처리",
+                icon: "fa-shield-halved",
+                speech: "오븐이 과열되어 에러가 나도 앱이 꺼지지 않게 막아줍니다!",
+                prompt: "파이썬에서 에러를 감지하고 예외를 처리하는 키워드 쌍은?",
+                type: "multiple-choice",
+                options: [
+                    "try - except",
+                    "try - catch",
+                    "catch - throw",
+                    "if - error"
+                ],
+                correct: "try - except",
+                explanation: "파이썬에서는 `try` 블록에서 에러가 나면 `except` 블록이 실행됩니다."
+            },
+            {
+                chapterId: "05-5",
+                chapterTitle: "내장 함수",
+                icon: "fa-screwdriver-wrench",
+                speech: "임포트 없이 언제든 바로 꺼내 쓸 수 있는 도구 상자!",
+                prompt: "리스트나 문자열의 전체 요소 개수(길이)를 반환하는 내장 함수는?",
+                type: "fill-blank",
+                codeSlot: "count = _____([\"애플파이\", \"초코파이\"])",
+                options: ["len", "length", "count", "size"],
+                correct: "len",
+                explanation: "`len()` 함수는 자료형의 길이/개수를 계산합니다."
+            },
+            {
+                chapterId: "05-6",
+                chapterTitle: "표준 라이브러리",
+                icon: "fa-boxes-packing",
+                speech: "파이썬 설치 시 기본 제공되는 날짜/시간 제어 모듈!",
+                prompt: "현재 시각 및 날짜 계산을 위해 사용하는 파이썬 표준 라이브러리는?",
+                type: "fill-blank",
+                codeSlot: "import _____\nnow = datetime.datetime.now()",
+                options: ["datetime", "timeclock", "calendar", "day"],
+                correct: "datetime",
+                explanation: "날짜와 시간을 포괄적으로 다루는 표준 라이브러리는 `datetime`입니다."
+            },
+            {
+                chapterId: "05-7",
+                chapterTitle: "외부 라이브러리",
+                icon: "fa-cloud-arrow-down",
+                speech: "전 세계 개발자들이 만들어둔 패키지를 다운로드해요!",
+                prompt: "파이썬 공식 외부 패키지를 설치할 때 터미널에서 사용하는 명령어는?",
+                type: "fill-blank",
+                codeSlot: "_____ install requests",
+                options: ["pip", "npm", "get", "python-add"],
+                correct: "pip",
+                explanation: "PyPI에서 외부 라이브러리를 설치할 때는 `pip` 명령어를 사용합니다."
+            }
+        ];
+
+        let playerStats = {
+            flour: 180,
+            coins: 350,
+            lives: 5,
+            bakeryLvl: 1,
+            clearedStages: 2
+        };
+
+        let selectedLessonIndex = 2;
+        let selectedOptionValue = null;
+
+        let bakeryShowcase = [
+            { id: 1, name: "숫자 계산 쿠키", icon: "🍪", price: 100, flour: 20, unlocked: true },
+            { id: 2, name: "문자열 꽈배기", icon: "🥨", price: 180, flour: 40, unlocked: true },
+            { id: 3, name: "리스트 모둠 타르트", icon: "🥧", price: 250, flour: 60, unlocked: false },
+            { id: 4, name: "불변 튜플 바게트", icon: "🥖", price: 320, flour: 80, unlocked: false },
+            { id: 5, name: "딕셔너리 롤케이크", icon: "🍰", price: 400, flour: 100, unlocked: false },
+            { id: 6, name: "클래스 웨딩케이크", icon: "🎂", price: 650, flour: 150, unlocked: false }
+        ];
+
+        let leaderboardRank = [
+            { rank: 1, name: "귀도 반 로썸 셰프", tier: "명예 마스터", score: 2500, icon: "👑" },
+            { rank: 2, name: "코딩하는 제빵사(나)", tier: "수석 제빵사", score: 1420, icon: "🥈" },
+            { rank: 3, name: "버터 향 가득 파이", tier: "숙련 베이커", score: 1210, icon: "🥉" },
+            { rank: 4, name: "초보 단팥빵", tier: "반죽 견습생", score: 890, icon: "🥖" }
+        ];
+
+        function renderRoadmap() {
+            const container = document.getElementById("roadmap-container");
+            let html = "";
+
+            courseCurriculum.forEach((chap, idx) => {
+                const isCleared = idx < playerStats.clearedStages;
+                const isCurrent = idx === playerStats.clearedStages;
+                const offsets = [0, 42, 22, -38, -18, 32, 46, 12, -42, -22, 28, 42, 0, -38, -12, 32, 46, 12, -34, -12, 22, 0];
+                const xOffset = offsets[idx % offsets.length];
+
+                let nodeClass = "map-node-locked";
+                let iconContent = `<i class="fa-solid fa-lock text-2xl"></i>`;
+
+                if (isCleared) {
+                    nodeClass = "map-node-cleared";
+                    iconContent = `<i class="fa-solid fa-check text-3xl font-black"></i>`;
+                } else if (isCurrent) {
+                    nodeClass = "map-node-active animate-pulse";
+                    iconContent = `<i class="fa-solid ${chap.icon} text-2xl"></i>`;
+                }
+
+                html += `
+                    <div class="flex flex-col items-center relative" style="transform: translateX(${xOffset}px);">
+                        ${isCurrent ? `
+                            <div class="bubble-start">
+                                START <i class="fa-solid fa-play ml-1 text-[10px]"></i>
+                            </div>
+                            <div class="ring-pulse"></div>
+                        ` : ''}
+
+                        <button onclick="handleNodeClick(${idx})" class="map-node ${nodeClass}">
+                            ${iconContent}
+                        </button>
+
+                        <div class="text-center mt-2.5">
+                            <span class="text-xs font-black tracking-wider ${isCurrent ? 'text-duoGreen' : isCleared ? 'text-amber-700' : 'text-gray-400'}">
+                                ${chap.chapterId}
+                            </span>
+                            <div class="text-xs sm:text-sm font-black leading-tight ${isCurrent ? 'text-gray-800' : isCleared ? 'text-gray-600' : 'text-gray-400'}">
+                                ${chap.chapterTitle}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if ((idx + 1) % 5 === 0 && idx !== courseCurriculum.length - 1) {
+                    html += `
+                        <div onclick="claimBonusFlour()" class="w-16 h-14 bg-amber-400 border-4 border-amber-600 rounded-3xl shadow-[0_6px_0_0_#b45309] flex items-center justify-center text-2xl cursor-pointer active:translate-y-1 transition" style="transform: translateX(${-xOffset/2}px);">
+                            🎁
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function handleNodeClick(idx) {
+            if (idx > playerStats.clearedStages) {
+                alert(`이전 챕터(${courseCurriculum[playerStats.clearedStages].chapterId})를 먼저 완료해주세요!`);
+                return;
+            }
+            openLessonQuiz(idx);
+        }
+
+        function claimBonusFlour() {
+            playerStats.flour += 35;
+            playerStats.coins += 50;
+            updateHUD();
+            confetti({ particleCount: 60, spread: 50 });
+            alert("🎁 밀가루 +35, 코인 +50을 획득했습니다!");
+        }
+
+        function switchGlobalTab(tab) {
+            document.getElementById("tab-map").classList.add("hidden");
+            document.getElementById("tab-quiz").classList.add("hidden");
+            document.getElementById("tab-bakery").classList.add("hidden");
+            document.getElementById("tab-leaderboard").classList.add("hidden");
+            document.getElementById("quiz-check-bar").classList.add("hidden");
+            document.getElementById("feedback-sheet").classList.add("hidden");
+            document.getElementById("global-navbar").classList.remove("hidden");
+
+            ['map', 'bakery', 'leaderboard'].forEach(t => {
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (btn) btn.className = "flex flex-col items-center text-gray-400 hover:text-gray-600";
+            });
+
+            if (tab === 'map') {
+                document.getElementById("tab-map").classList.remove("hidden");
+                document.getElementById("nav-btn-map").className = "flex flex-col items-center text-duoGreen";
+                renderRoadmap();
+            } else if (tab === 'bakery') {
+                document.getElementById("tab-bakery").classList.remove("hidden");
+                document.getElementById("nav-btn-bakery").className = "flex flex-col items-center text-duoGreen";
+                renderBakery();
+            } else if (tab === 'leaderboard') {
+                document.getElementById("tab-leaderboard").classList.remove("hidden");
+                document.getElementById("nav-btn-leaderboard").className = "flex flex-col items-center text-duoGreen";
+                renderLeaderboard();
+            }
+        }
+
+        function openLessonQuiz(idx) {
+            selectedLessonIndex = idx;
+            selectedOptionValue = null;
+
+            document.getElementById("tab-map").classList.add("hidden");
+            document.getElementById("tab-bakery").classList.add("hidden");
+            document.getElementById("tab-leaderboard").classList.add("hidden");
+            document.getElementById("global-navbar").classList.add("hidden");
+
+            document.getElementById("tab-quiz").classList.remove("hidden");
+            document.getElementById("quiz-check-bar").classList.remove("hidden");
+            document.getElementById("feedback-sheet").classList.add("hidden");
+
+            renderQuizDetail();
+        }
+
+        function closeQuizView() {
+            if (confirm("학습을 멈추고 지도로 돌아갈까요?")) {
+                switchGlobalTab('map');
+            }
+        }
+
+        function renderQuizDetail() {
+            selectedOptionValue = null;
+            const quiz = courseCurriculum[selectedLessonIndex];
+
+            document.getElementById("current-unit-badge").innerText = `${quiz.chapterId} 챕터`;
+            document.getElementById("current-chapter-title").innerText = quiz.chapterTitle;
+            document.getElementById("quiz-mascot-hint").innerText = `"${quiz.speech}"`;
+
+            const pct = ((selectedLessonIndex + 1) / courseCurriculum.length) * 100;
+            document.getElementById("quiz-progress-bar").style.width = `${pct}%`;
+
+            const checkBtn = document.getElementById("btn-check-answer");
+            checkBtn.disabled = true;
+            checkBtn.className = "w-full py-4 rounded-2xl text-gray-400 font-black text-base btn-duo-gray cursor-not-allowed";
+
+            let bodyHtml = `
+                <div class="mb-5">
+                    <span class="inline-block px-3 py-1 bg-amber-100 text-amber-800 font-black text-xs rounded-xl mb-2 border border-amber-200">
+                        ${quiz.chapterId}. ${quiz.chapterTitle}
+                    </span>
+                    <h2 class="text-lg sm:text-xl font-black text-gray-800 leading-snug">${quiz.prompt}</h2>
+                </div>
+            `;
+
+            if (quiz.type === "fill-blank") {
+                bodyHtml += `
+                    <div class="bg-amber-50/70 border-4 border-amber-200 p-4 rounded-3xl code-box text-base font-bold text-center mb-6 text-gray-800 shadow-inner">
+                        ${quiz.codeSlot.replace("_____", "<span id='quiz-blank' class='inline-block px-4 py-1 mx-1 border-b-4 border-duoGreen bg-green-50 text-duoGreen font-black rounded-2xl min-w-[70px] text-center'>___</span>")}
+                    </div>
+                    <div class="grid grid-cols-2 gap-3.5">
+                `;
+                quiz.options.forEach(opt => {
+                    bodyHtml += `
+                        <button onclick="selectOption('${opt}', this)" class="opt-btn py-4 px-3 btn-duo-white rounded-2xl font-black text-sm text-gray-700">
+                            ${opt}
+                        </button>
+                    `;
+                });
+                bodyHtml += `</div>`;
+            } else if (quiz.type === "multiple-choice") {
+                bodyHtml += `<div class="flex flex-col gap-3.5">`;
+                quiz.options.forEach(opt => {
+                    bodyHtml += `
+                        <button onclick="selectOption('${opt.replace(/"/g, '&quot;')}', this)" class="opt-btn py-4 px-4 btn-duo-white rounded-2xl font-bold text-sm text-gray-700 text-left flex items-center justify-between">
+                            <span class="code-box">${opt}</span>
+                            <div class="w-5 h-5 rounded-full border-2 border-gray-300 shrink-0"></div>
+                        </button>
+                    `;
+                });
+                bodyHtml += `</div>`;
+            }
+
+            document.getElementById("quiz-card-body").innerHTML = bodyHtml;
+        }
+
+        function selectOption(val, elem) {
+            selectedOptionValue = val;
+
+            document.querySelectorAll('.opt-btn').forEach(btn => {
+                btn.classList.remove('border-duoGreen', 'bg-green-50', 'text-duoGreen');
+                btn.classList.add('border-[#e5e5e5]', 'bg-white', 'text-gray-700');
+            });
+
+            elem.classList.remove('border-[#e5e5e5]', 'bg-white', 'text-gray-700');
+            elem.classList.add('border-duoGreen', 'bg-green-50', 'text-duoGreen');
+
+            const blank = document.getElementById('quiz-blank');
+            if (blank) {
+                blank.innerText = val;
+                blank.classList.add('bg-green-100', 'text-green-800');
+            }
+
+            const checkBtn = document.getElementById("btn-check-answer");
+            checkBtn.disabled = false;
+            checkBtn.className = "w-full py-4 rounded-2xl text-white font-black text-base btn-duo-green cursor-pointer";
+        }
+
+        function checkUserAnswer() {
+            const quiz = courseCurriculum[selectedLessonIndex];
+            const isCorrect = (selectedOptionValue === quiz.correct);
+
+            const sheet = document.getElementById("feedback-sheet");
+            const icon = document.getElementById("feedback-icon");
+            const title = document.getElementById("feedback-title");
+            const desc = document.getElementById("feedback-desc");
+            const nextBtn = document.getElementById("btn-next-step");
+
+            document.getElementById("quiz-check-bar").classList.add("hidden");
+            sheet.classList.remove("hidden");
+
+            if (isCorrect) {
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+                playerStats.flour += 20;
+                playerStats.coins += 30;
+
+                if (selectedLessonIndex === playerStats.clearedStages) {
+                    playerStats.clearedStages++;
+                }
+                updateHUD();
+
+                sheet.className = "absolute bottom-0 left-0 right-0 p-6 rounded-t-[36px] bg-green-100 border-t-4 border-duoGreen z-40 flex flex-col gap-4 shadow-2xl safe-bottom";
+                icon.className = "w-12 h-12 rounded-full bg-duoGreen flex items-center justify-center text-white text-2xl font-black shadow-md";
+                icon.innerHTML = "<i class='fa-solid fa-check'></i>";
+                title.innerText = "잘 구워졌어요! 정답입니다! (+20🌾, +30🪙)";
+                title.className = "font-black text-base text-duoGreen";
+                desc.innerText = quiz.explanation;
+                nextBtn.className = "w-full py-4 rounded-2xl text-white font-black text-base btn-duo-green";
+            } else {
+                playerStats.lives = Math.max(0, playerStats.lives - 1);
+                updateHUD();
+
+                sheet.className = "absolute bottom-0 left-0 right-0 p-6 rounded-t-[36px] bg-red-100 border-t-4 border-duoRed z-40 flex flex-col gap-4 shadow-2xl safe-bottom";
+                icon.className = "w-12 h-12 rounded-full bg-duoRed flex items-center justify-center text-white text-2xl font-black shadow-md";
+                icon.innerHTML = "<i class='fa-solid fa-xmark'></i>";
+                title.innerText = `레시피 오답! 정답: ${quiz.correct}`;
+                title.className = "font-black text-base text-duoRed";
+                desc.innerText = quiz.explanation;
+                nextBtn.className = "w-full py-4 rounded-2xl text-white font-black text-base bg-duoRed shadow-[0_8px_0_0_#d92c2c]";
+
+                if (playerStats.lives <= 0) {
+                    setTimeout(() => {
+                        alert("하트가 소진되어 5개가 무료 충전되었습니다!");
+                        playerStats.lives = 5;
+                        updateHUD();
+                    }, 400);
+                }
+            }
+        }
+
+        function proceedNextLesson() {
+            document.getElementById("feedback-sheet").classList.add("hidden");
+
+            if (selectedLessonIndex + 1 < courseCurriculum.length) {
+                selectedLessonIndex++;
+                openLessonQuiz(selectedLessonIndex);
+            } else {
+                confetti({ particleCount: 150, spread: 90 });
+                alert("🎉 전 과정을 완주하셨습니다! 수석 제빵사 등극을 축하합니다!");
+                switchGlobalTab('map');
+            }
+        }
+
+        function updateHUD() {
+            document.getElementById("stat-flour").innerText = playerStats.flour;
+            document.getElementById("stat-coins").innerText = playerStats.coins;
+            document.getElementById("stat-lives").innerText = playerStats.lives;
+        }
+
+        function renderBakery() {
+            let html = "";
+            bakeryShowcase.forEach(item => {
+                html += `
+                    <div class="bg-white border-4 ${item.unlocked ? 'border-amber-200' : 'border-gray-200 opacity-60'} rounded-3xl p-4 flex flex-col items-center text-center shadow-sm">
+                        <div class="text-4xl mb-1.5">${item.icon}</div>
+                        <div class="font-black text-gray-800 text-xs mb-0.5">${item.name}</div>
+                        <div class="text-[11px] text-amber-700 font-bold mb-2.5">필요 밀가루: ${item.flour}🌾</div>
+                        ${item.unlocked 
+                            ? `<span class="text-xs font-black text-duoGreen bg-green-50 border-2 border-green-200 px-3 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>진열중</span>`
+                            : `<button onclick="bakePieItem(${item.id})" class="px-3.5 py-1.5 btn-duo-yellow text-amber-950 font-black text-xs rounded-xl">굽기 (${item.price}🪙)</button>`
+                        }
+                    </div>
+                `;
+            });
+            document.getElementById("pie-shelf-grid").innerHTML = html;
+        }
+
+        function bakePieItem(id) {
+            const pie = bakeryShowcase.find(p => p.id === id);
+            if (playerStats.coins >= pie.price && playerStats.flour >= pie.flour) {
+                playerStats.coins -= pie.price;
+                playerStats.flour -= pie.flour;
+                pie.unlocked = true;
+                updateHUD();
+                renderBakery();
+                confetti({ particleCount: 60, spread: 50 });
+                alert(`✨ [${pie.name}]을 구워 진열대에 추가했습니다!`);
+            } else {
+                alert(`코인 또는 밀가루가 부족합니다! (필요: ${pie.price}🪙, ${pie.flour}🌾)`);
+            }
+        }
+
+        function upgradeBakery() {
+            if (playerStats.coins >= 250) {
+                playerStats.coins -= 250;
+                playerStats.bakeryLvl++;
+                document.getElementById("bakery-lvl-text").innerText = playerStats.bakeryLvl;
+                updateHUD();
+                confetti({ particleCount: 80, spread: 60 });
+                alert(`🎉 오븐 레벨이 Lv.${playerStats.bakeryLvl}로 업그레이드되었습니다!`);
+            } else {
+                alert("오븐 업그레이드에 250 코인이 필요합니다!");
+            }
+        }
+
+        function renderLeaderboard() {
+            let html = "";
+            leaderboardRank.forEach(u => {
+                html += `
+                    <div class="flex items-center justify-between p-3.5 bg-gray-50 border-4 border-duoGray rounded-2xl">
+                        <div class="flex items-center gap-3">
+                            <span class="font-black text-base w-6 text-center text-amber-600">${u.icon}</span>
+                            <div>
+                                <div class="font-black text-sm text-gray-800">${u.name}</div>
+                                <div class="text-xs text-gray-500 font-bold">${u.tier}</div>
+                            </div>
+                        </div>
+                        <div class="text-xs font-black text-amber-600 bg-amber-50 border-2 border-amber-200 px-3 py-1 rounded-xl">
+                            ${u.score} pts
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById("leaderboard-items").innerHTML = html;
+        }
+
+        window.onload = function() {
+            updateHUD();
+            renderRoadmap();
+        };
+    </script>
+</body>
+</html>
