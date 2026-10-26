@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ FitAI - AI 스마트 운동 자세 교정 트레이너</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        accent: {
+                            orange: '#ff6b35',
+                            cyan: '#06b6d4',
+                            purple: '#8b5cf6',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans KR', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome for Gym & UI Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- TensorFlow.js and Teachable Machine Pose libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8.3/dist/teachablemachine-pose.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-12px) rotate(3deg); }
+        }
+        @keyframes floatReverse {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(10px) rotate(-3deg); }
+        }
+        .animate-float-1 { animation: floatSlow 6s ease-in-out infinite; }
+        .animate-float-2 { animation: floatReverse 7s ease-in-out infinite; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 relative overflow-x-hidden pb-12">
+
+    <!-- BACKGROUND GRAPHICS -->
+    <div class="fixed top-20 left-4 lg:left-8 pointer-events-none z-0 opacity-25 lg:opacity-80 animate-float-1 hidden sm:block">
+        <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="42" width="70" height="16" rx="8" fill="#16a34a"/>
+            <rect x="8" y="25" width="16" height="50" rx="5" fill="#22c55e"/>
+            <rect x="76" y="25" width="16" height="50" rx="5" fill="#22c55e"/>
+            <rect x="2" y="32" width="8" height="36" rx="3" fill="#15803d"/>
+            <rect x="90" y="32" width="8" height="36" rx="3" fill="#15803d"/>
+        </svg>
+    </div>
+
+    <div class="fixed bottom-12 right-4 lg:right-8 pointer-events-none z-0 opacity-25 lg:opacity-80 animate-float-2 hidden sm:block">
+        <svg width="130" height="130" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M35 30 C35 15, 65 15, 65 30" stroke="#ff6b35" stroke-width="10" stroke-linecap="round"/>
+            <circle cx="50" cy="62" r="32" fill="#ff6b35"/>
+            <circle cx="50" cy="55" r="10" fill="#ffffff" opacity="0.3"/>
+            <text x="50" y="72" font-size="16" font-weight="bold" fill="white" text-anchor="middle">KG</text>
+        </svg>
+    </div>
+
+    <!-- HEADER -->
+    <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 bg-gradient-to-tr from-brand-600 via-brand-500 to-emerald-400 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-dumbbell text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
+                        FitAI <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-bold border border-brand-400">PRO</span>
+                    </h1>
+                    <p class="text-xs font-medium text-slate-500">실시간 AI 포즈 교정 & 모션 트레이너</p>
+                </div>
+            </div>
+
+            <div class="hidden md:flex items-center space-x-6">
+                <div class="flex items-center space-x-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-700 text-xs font-bold">
+                    <i class="fa-solid fa-fire text-amber-500 text-sm animate-bounce"></i>
+                    <span>운동 모드 활성화</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
+
+        <!-- DASHBOARD GRID -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- LEFT COLUMN: WEBCAM FEED -->
+            <div class="lg:col-span-7 flex flex-col space-y-4">
+                <div class="glass-panel rounded-3xl p-4 shadow-xl shadow-slate-200/50 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
+                    
+                    <div class="w-full flex items-center justify-between mb-3 px-2">
+                        <div class="flex items-center space-x-2">
+                            <span id="status-dot" class="w-3 h-3 rounded-full bg-slate-400"></span>
+                            <span id="status-text" class="text-xs font-bold text-slate-500 uppercase tracking-wider">카메라 대기 중</span>
+                        </div>
+                        <button id="btn-start" onclick="toggleCamera()" 
+                                class="bg-gradient-to-r from-brand-500 to-emerald-600 hover:from-brand-600 hover:to-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition-all flex items-center gap-2 text-xs">
+                            <i class="fa-solid fa-video" id="btn-icon"></i>
+                            <span id="btn-text">트레이닝 시작</span>
+                        </button>
+                    </div>
+
+                    <!-- CAMERA & CANVAS BOX -->
+                    <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+                        <canvas id="canvas" class="w-full h-full object-cover rounded-2xl hidden"></canvas>
+
+                        <div id="cam-placeholder" class="flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                            <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-3xl text-slate-500 mb-4 border border-slate-700 shadow-inner">
+                                <i class="fa-solid fa-camera-retro"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-200 mb-1">웹캠 카메라가 꺼져 있습니다</h3>
+                            <p class="text-xs text-slate-400 max-w-sm">상단의 [트레이닝 시작] 버튼을 누르면 권한 창이 표시됩니다.</p>
+                        </div>
+
+                        <div id="live-pose-badge" class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl hidden flex items-center gap-2 shadow-lg">
+                            <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+                            <span id="badge-pose-name" class="font-bold text-sm text-emerald-300">감지 중...</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full mt-3 flex items-center justify-between text-xs font-medium text-slate-500 px-2">
+                        <span><i class="fa-solid fa-shield-halved text-brand-500 mr-1"></i> 로컬 보안 처리</span>
+                        <span id="fps-counter" class="text-slate-400 font-mono"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: ANALYTICS -->
+            <div class="lg:col-span-5 flex flex-col space-y-6">
+
+                <!-- WORKOUT COUNTER & TIMER -->
+                <div class="glass-panel rounded-3xl p-6 shadow-xl shadow-slate-200/50 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 relative overflow-hidden">
+                    <i class="fa-solid fa-stopwatch absolute -right-4 -bottom-4 text-8xl text-emerald-500/10 pointer-events-none"></i>
+
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Workout Tracker</span>
+                        <button onclick="resetStats()" class="text-xs text-slate-400 hover:text-slate-600 font-bold bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> 초기화
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-center shadow-sm">
+                            <span class="text-xs font-bold text-slate-400 block mb-1">성공 횟수</span>
+                            <span id="rep-count" class="text-5xl font-black text-brand-600 tracking-tight">0</span>
+                            <span class="text-xs text-brand-500 font-extrabold block mt-1">회 달성</span>
+                        </div>
+
+                        <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-center shadow-sm">
+                            <span class="text-xs font-bold text-slate-400 block mb-1">운동 시간</span>
+                            <span id="workout-timer" class="text-3xl font-black text-slate-800 tracking-tight font-mono my-2 block">00:00</span>
+                            <span class="text-xs text-slate-400 font-semibold block">진행 중</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE PROBABILITIES -->
+                <div class="glass-panel rounded-3xl p-6 shadow-xl shadow-slate-200/50 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-simple text-brand-500"></i> 자세 인식 분석
+                            </h3>
+                            <span class="text-xs text-slate-400">Confidence</span>
+                        </div>
+
+                        <div id="label-container" class="space-y-4 my-2">
+                            <div class="text-center py-8 text-slate-400">
+                                <i class="fa-solid fa-person-rays text-4xl text-slate-300 mb-2 block"></i>
+                                <p class="text-xs font-medium">카메라를 연결하면 클래스별 정확도가 표시됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VOICE FEEDBACK -->
+                    <div class="mt-6 pt-5 border-t border-slate-200/80">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <i class="fa-solid fa-volume-high text-accent-orange text-lg"></i>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800">음성 피드백 (TTS)</h4>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="tts-toggle" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                                <i class="fa-solid fa-bullhorn text-sm"></i>
+                            </div>
+                            <p id="coach-message" class="text-xs font-bold text-amber-900 leading-snug">
+                                "준비가 되면 상단 시작 버튼을 누르세요!"
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPT -->
+    <script type="text/javascript">
+        let model, webcam, ctx, labelContainer, maxPredictions;
+        let isRunning = false;
+
+        let currentPose = "";
+        let previousPose = "";
+        let repCount = 0;
+        let lastVoiceTime = 0;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+
+        const colorPalette = [
+            'from-brand-500 to-emerald-400',
+            'from-orange-500 to-amber-400',
+            'from-cyan-500 to-blue-400',
+            'from-purple-500 to-indigo-400',
+            'from-pink-500 to-rose-400'
+        ];
+
+        async function toggleCamera() {
+            const btnText = document.getElementById("btn-text");
+            const btnIcon = document.getElementById("btn-icon");
+            const btnStart = document.getElementById("btn-start");
+            
+            const modelInput = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
+
+            if (!isRunning) {
+                btnText.innerText = "연결 중...";
+                btnIcon.className = "fa-solid fa-spinner fa-spin";
+                btnStart.disabled = true;
+
+                try {
+                    const URL = modelInput.endsWith("/") ? modelInput : modelInput + "/";
+                    const modelURL = URL + "model.json";
+                    const metadataURL = URL + "metadata.json";
+
+                    // 1. AI 모델 로드
+                    model = await tmPose.load(modelURL, metadataURL);
+                    maxPredictions = model.getTotalClasses();
+
+                    // 2. 웹캠 인스턴스 생성 및 권한 요청 팝업 유도 (브라우저 내장 팝업)
+                    const width = 640;
+                    const height = 480;
+                    const flip = true; 
+                    webcam = new tmPose.Webcam(width, height, flip); 
+                    
+                    // setup() 호출 시 브라우저가 카메라 권한 허용 여부를 묻는 팝업을 띄웁니다.
+                    await webcam.setup(); 
+                    await webcam.play();
+                    window.requestAnimationFrame(loop);
+
+                    // 3. UI 캔버스 활성화
+                    const canvas = document.getElementById("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx = canvas.getContext("2d");
+                    canvas.classList.remove("hidden");
+                    document.getElementById("cam-placeholder").classList.add("hidden");
+
+                    document.getElementById("status-dot").className = "w-3 h-3 rounded-full bg-brand-500 animate-ping";
+                    document.getElementById("status-text").innerText = "실시간 분석 중";
+                    document.getElementById("status-text").className = "text-xs font-bold text-brand-600 uppercase tracking-wider";
+                    document.getElementById("live-pose-badge").classList.remove("hidden");
+
+                    setupLabelContainer();
+
+                    btnText.innerText = "정지";
+                    btnIcon.className = "fa-solid fa-stop";
+                    btnStart.disabled = false;
+                    isRunning = true;
+
+                    startTimer();
+                    speakCoach("트레이닝을 시작합니다.");
+                } catch (err) {
+                    console.error("Camera/Model Error:", err);
+                    alert("카메라 권한이 거부되었거나 모델을 불러오지 못했습니다.\n브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 카메라 권한을 허용해 주세요.");
+                    btnText.innerText = "트레이닝 시작";
+                    btnIcon.className = "fa-solid fa-video";
+                    btnStart.disabled = false;
+                }
+            } else {
+                if (webcam) {
+                    await webcam.stop();
+                }
+                isRunning = false;
+
+                document.getElementById("canvas").classList.add("hidden");
+                document.getElementById("cam-placeholder").classList.remove("hidden");
+                document.getElementById("status-dot").className = "w-3 h-3 rounded-full bg-slate-400";
+                document.getElementById("status-text").innerText = "대기 중";
+                document.getElementById("status-text").className = "text-xs font-bold text-slate-500 uppercase tracking-wider";
+                document.getElementById("live-pose-badge").classList.add("hidden");
+
+                btnText.innerText = "트레이닝 시작";
+                btnIcon.className = "fa-solid fa-video";
+                btnStart.disabled = false;
+                
+                stopTimer();
+                speakCoach("운동을 완료했습니다.");
+            }
+        }
+
+        async function loop(timestamp) {
+            if (!isRunning) return;
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        async function predict() {
+            const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+            const prediction = await model.predict(posenetOutput);
+
+            let highestProbability = 0;
+            let dominantClass = "";
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const className = prediction[i].className;
+                const probability = prediction[i].probability;
+
+                if (probability > highestProbability) {
+                    highestProbability = probability;
+                    dominantClass = className;
+                }
+
+                const barFill = document.getElementById(`bar-fill-${i}`);
+                const scoreText = document.getElementById(`score-text-${i}`);
+                if (barFill && scoreText) {
+                    const percent = (probability * 100).toFixed(0);
+                    barFill.style.width = `${percent}%`;
+                    scoreText.innerText = `${percent}%`;
+                }
+            }
+
+            if (highestProbability > 0.65) {
+                currentPose = dominantClass;
+                document.getElementById("badge-pose-name").innerText = currentPose;
+                handleWorkoutState(currentPose);
+            }
+
+            drawPose(pose);
+        }
+
+        function drawPose(pose) {
+            if (webcam.canvas) {
+                ctx.drawImage(webcam.canvas, 0, 0);
+                if (pose) {
+                    const minPartConfidence = 0.5;
+                    tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+                    tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+                }
+            }
+        }
+
+        function setupLabelContainer() {
+            labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = "";
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const className = model.getClassLabels()[i];
+                const gradientClass = colorPalette[i % colorPalette.length];
+
+                const wrapper = document.createElement("div");
+                wrapper.className = "bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm";
+                
+                wrapper.innerHTML = `
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
+                            ${className}
+                        </span>
+                        <span id="score-text-${i}" class="text-xs font-extrabold text-slate-800 font-mono">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200/50">
+                        <div id="bar-fill-${i}" class="bg-gradient-to-r ${gradientClass} h-3 rounded-full transition-all duration-200" style="width: 0%"></div>
+                    </div>
+                `;
+                labelContainer.appendChild(wrapper);
+            }
+        }
+
+        function handleWorkoutState(pose) {
+            if (pose !== previousPose) {
+                const now = Date.now();
+                const lowerPose = pose.toLowerCase();
+                const prevLower = previousPose.toLowerCase();
+
+                if ((prevLower.includes("down") || prevLower.includes("squat")) && 
+                    (lowerPose.includes("up") || lowerPose.includes("stand") || lowerPose.includes("good"))) {
+                    repCount++;
+                    document.getElementById("rep-count").innerText = repCount;
+                    speakCoach(`${repCount}회 달성!`, true);
+                } else if (lowerPose.includes("bad") || lowerPose.includes("wrong")) {
+                    if (now - lastVoiceTime > 3500) { 
+                        speakCoach("자세를 점검해주세요!");
+                        lastVoiceTime = now;
+                    }
+                }
+                previousPose = pose;
+            }
+        }
+
+        function startTimer() {
+            secondsElapsed = 0;
+            updateTimerDisplay();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
+            const secs = (secondsElapsed % 60).toString().padStart(2, '0');
+            const timerEl = document.getElementById("workout-timer");
+            if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+        }
+
+        function resetStats() {
+            repCount = 0;
+            secondsElapsed = 0;
+            const repEl = document.getElementById("rep-count");
+            if (repEl) repEl.innerText = "0";
+            updateTimerDisplay();
+        }
+
+        function speakCoach(text, force = false) {
+            const ttsToggle = document.getElementById("tts-toggle");
+            if (!ttsToggle || !ttsToggle.checked) return;
+
+            const coachMsg = document.getElementById("coach-message");
+            if (coachMsg) coachMsg.innerText = `"${text}"`;
+
+            if ('speechSynthesis' in window) {
+                if (!force && window.speechSynthesis.speaking) return;
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+    </script>
+</body>
+</html>
