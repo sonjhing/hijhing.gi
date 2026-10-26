@@ -8,7 +8,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
+        if (window.tailwind) tailwind.config = {
             theme: {
                 extend: {
                     colors: {
@@ -39,29 +39,49 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
 
-    <!-- FontAwesome for Gym & UI Icons -->
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- TensorFlow.js and Teachable Machine Pose libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.min.js"></script>
+    <!-- TensorFlow.js / Teachable Machine Pose -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8.3/dist/teachablemachine-pose.min.js"></script>
 
     <style>
         body {
             font-family: 'Noto Sans KR', 'Inter', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+            background: linear-gradient(
+                135deg,
+                #f8fafc 0%,
+                #f1f5f9 50%,
+                #e2e8f0 100%
+            );
         }
 
         @keyframes floatSlow {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-12px) rotate(3deg); }
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-12px) rotate(3deg);
+            }
         }
+
         @keyframes floatReverse {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(10px) rotate(-3deg); }
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            50% {
+                transform: translateY(10px) rotate(-3deg);
+            }
         }
-        .animate-float-1 { animation: floatSlow 6s ease-in-out infinite; }
-        .animate-float-2 { animation: floatReverse 7s ease-in-out infinite; }
+
+        .animate-float-1 {
+            animation: floatSlow 6s ease-in-out infinite;
+        }
+
+        .animate-float-2 {
+            animation: floatReverse 7s ease-in-out infinite;
+        }
 
         .glass-panel {
             background: rgba(255, 255, 255, 0.85);
@@ -73,18 +93,63 @@
         ::-webkit-scrollbar {
             width: 6px;
         }
+
         ::-webkit-scrollbar-track {
             background: #f1f5f9;
         }
+
         ::-webkit-scrollbar-thumb {
             background: #cbd5e1;
             border-radius: 4px;
         }
+
+        button:disabled,
+        input:disabled,
+        select:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        #error-detail {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        #label-container {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        #live-pose-badge {
+            max-width: calc(100% - 2rem);
+        }
+
+        #badge-pose-name {
+            overflow-wrap: anywhere;
+        }
+
+        #canvas {
+            object-fit: contain;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
     </style>
 </head>
+
 <body class="min-h-screen text-slate-800 relative overflow-x-hidden pb-12">
 
-    <!-- BACKGROUND GRAPHICS -->
+    <!-- 배경 그래픽 -->
     <div class="fixed top-20 left-4 lg:left-8 pointer-events-none z-0 opacity-25 lg:opacity-80 animate-float-1 hidden sm:block">
         <svg width="120" height="120" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="15" y="42" width="70" height="16" rx="8" fill="#16a34a"/>
@@ -104,135 +169,339 @@
         </svg>
     </div>
 
-    <!-- HEADER -->
+    <!-- 헤더 -->
     <header class="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <div class="w-12 h-12 bg-gradient-to-tr from-brand-600 via-brand-500 to-emerald-400 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-500/30">
                     <i class="fa-solid fa-dumbbell text-2xl"></i>
                 </div>
+
                 <div>
                     <h1 class="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-2">
-                        FitAI <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-bold border border-brand-400">PRO</span>
+                        FitAI
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-700 font-bold border border-brand-400">
+                            PRO
+                        </span>
                     </h1>
-                    <p class="text-xs font-medium text-slate-500">실시간 AI 포즈 교정 & 모션 트레이너</p>
+                    <p class="text-xs font-medium text-slate-500">
+                        실시간 AI 포즈 교정 & 모션 트레이너
+                    </p>
                 </div>
             </div>
 
             <div class="hidden md:flex items-center space-x-6">
                 <div class="flex items-center space-x-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-700 text-xs font-bold">
                     <i class="fa-solid fa-fire text-amber-500 text-sm animate-bounce"></i>
-                    <span>운동 모드 활성화</span>
+                    <span id="header-status">트레이닝 대기</span>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- CONTENT WRAPPER -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 relative z-10">
 
-        <!-- DASHBOARD GRID -->
+        <!-- 모델 및 카메라 설정 -->
+        <section class="glass-panel rounded-3xl p-5 sm:p-6 shadow-lg mb-6" aria-label="트레이닝 설정">
+
+            <fieldset id="session-settings" class="space-y-3 min-w-0">
+                <label for="model-url" class="block text-sm font-extrabold">
+                    Teachable Machine 포즈 모델 주소
+                </label>
+
+                <input
+                    id="model-url"
+                    type="url"
+                    autocomplete="off"
+                    spellcheck="false"
+                    placeholder="https://teachablemachine.withgoogle.com/models/실제모델ID/"
+                    class="w-full min-w-0 px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-400"
+                >
+
+                <div class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            id="preview-only"
+                            type="checkbox"
+                            checked
+                            class="accent-green-600"
+                        >
+                        카메라만 테스트 (모델 없이 실행)
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input
+                            id="mirror-camera"
+                            type="checkbox"
+                            checked
+                            class="accent-green-600"
+                        >
+                        좌우 반전
+                    </label>
+                </div>
+
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    AI 분석은 실제 포즈 모델 주소를 입력하고 ‘카메라만 테스트’를 해제하세요.
+                    카메라 테스트에서는 횟수·운동 시간을 측정하지 않습니다.
+                    AI 모드는 학습 화면에 맞춰 중앙 정사각형 영역을 사용합니다.
+                </p>
+            </fieldset>
+
+            <!-- 모델 클래스와 동작 연결 -->
+            <details id="class-settings" class="mt-4 border-t border-slate-200 pt-4">
+                <summary class="cursor-pointer text-sm font-bold">
+                    횟수 판정 설정
+                </summary>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                    <label class="text-xs font-bold text-slate-600">
+                        준비·복귀 자세 (예: 서기)
+
+                        <select
+                            id="up-class"
+                            disabled
+                            class="mt-2 block w-full bg-white border border-slate-200 rounded-xl p-3 text-sm"
+                        >
+                            <option value="">모델 연결 후 선택</option>
+                        </select>
+                    </label>
+
+                    <label class="text-xs font-bold text-slate-600">
+                        동작 자세 (예: 앉기)
+
+                        <select
+                            id="down-class"
+                            disabled
+                            class="mt-2 block w-full bg-white border border-slate-200 rounded-xl p-3 text-sm"
+                        >
+                            <option value="">모델 연결 후 선택</option>
+                        </select>
+                    </label>
+                </div>
+
+                <p id="mapping-note" class="text-xs text-slate-500 mt-3 leading-relaxed">
+                    모델 연결 후 두 자세를 지정하세요.
+                    준비 → 동작 → 준비를 1회로 계산합니다.
+                </p>
+
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                    기본값: 인식 확률 80% 이상, 1·2순위 확률 차이 15%p 이상,
+                    자세 유지 0.4초·최소 3프레임.
+                    이는 테스트용 판정 기준이며 운동 자세의 정확성을 보장하지 않습니다.
+                </p>
+            </details>
+
+            <!-- 오류 안내 -->
+            <div
+                id="error-box"
+                hidden
+                role="alert"
+                class="mt-4 p-4 rounded-2xl border border-red-200 bg-red-50 text-red-800"
+            >
+                <p id="error-message" class="text-sm font-bold"></p>
+
+                <details class="mt-2 text-xs">
+                    <summary class="cursor-pointer">오류 상세</summary>
+                    <pre id="error-detail" class="mt-2"></pre>
+                </details>
+            </div>
+        </section>
+
+        <!-- 대시보드 -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            <!-- LEFT COLUMN: WEBCAM FEED -->
+            <!-- 카메라 -->
             <div class="lg:col-span-7 flex flex-col space-y-4">
                 <div class="glass-panel rounded-3xl p-4 shadow-xl shadow-slate-200/50 relative overflow-hidden flex flex-col items-center justify-center min-h-[420px]">
-                    
+
                     <div class="w-full flex items-center justify-between mb-3 px-2">
                         <div class="flex items-center space-x-2">
-                            <span id="status-dot" class="w-3 h-3 rounded-full bg-slate-400"></span>
-                            <span id="status-text" class="text-xs font-bold text-slate-500 uppercase tracking-wider">카메라 대기 중</span>
+                            <span
+                                id="status-dot"
+                                class="w-3 h-3 rounded-full bg-slate-400"
+                            ></span>
+
+                            <span
+                                id="status-text"
+                                class="text-xs font-bold text-slate-500 uppercase tracking-wider"
+                            >
+                                카메라 대기 중
+                            </span>
                         </div>
-                        <button id="btn-start" onclick="toggleCamera()" 
-                                class="bg-gradient-to-r from-brand-500 to-emerald-600 hover:from-brand-600 hover:to-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition-all flex items-center gap-2 text-xs">
+
+                        <button
+                            id="btn-start"
+                            type="button"
+                            class="bg-gradient-to-r from-brand-500 to-emerald-600 hover:from-brand-600 hover:to-emerald-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition-all flex items-center gap-2 text-xs"
+                        >
                             <i class="fa-solid fa-video" id="btn-icon"></i>
                             <span id="btn-text">트레이닝 시작</span>
                         </button>
                     </div>
 
-                    <!-- CAMERA & CANVAS BOX -->
                     <div class="relative w-full aspect-[4/3] bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
-                        <canvas id="canvas" class="w-full h-full object-cover rounded-2xl hidden"></canvas>
 
-                        <div id="cam-placeholder" class="flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                        <canvas
+                            id="canvas"
+                            width="640"
+                            height="480"
+                            class="w-full h-full object-contain rounded-2xl hidden"
+                            aria-label="카메라 및 자세 분석 화면"
+                        ></canvas>
+
+                        <div
+                            id="cam-placeholder"
+                            class="flex flex-col items-center justify-center text-center p-6 text-slate-400"
+                        >
                             <div class="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center text-3xl text-slate-500 mb-4 border border-slate-700 shadow-inner">
                                 <i class="fa-solid fa-camera-retro"></i>
                             </div>
-                            <h3 class="text-lg font-bold text-slate-200 mb-1">웹캠 카메라가 꺼져 있습니다</h3>
-                            <p class="text-xs text-slate-400 max-w-sm">상단의 [트레이닝 시작] 버튼을 누르면 권한 요청 창이 뜹니다.</p>
+
+                            <h3 class="text-lg font-bold text-slate-200 mb-1">
+                                웹캠 카메라가 꺼져 있습니다
+                            </h3>
+
+                            <p class="text-xs text-slate-400 max-w-sm">
+                                설정을 확인한 뒤 시작 버튼을 누르고
+                                카메라 접근을 허용하세요.
+                            </p>
                         </div>
 
-                        <div id="live-pose-badge" class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl hidden flex items-center gap-2 shadow-lg">
+                        <div
+                            id="live-pose-badge"
+                            class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl hidden flex items-center gap-2 shadow-lg"
+                        >
                             <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
-                            <span id="badge-pose-name" class="font-bold text-sm text-emerald-300">감지 중...</span>
+
+                            <span
+                                id="badge-pose-name"
+                                class="font-bold text-sm text-emerald-300"
+                            >
+                                감지 중...
+                            </span>
                         </div>
                     </div>
 
                     <div class="w-full mt-3 flex items-center justify-between text-xs font-medium text-slate-500 px-2">
-                        <span><i class="fa-solid fa-shield-halved text-brand-500 mr-1"></i> 로컬 보안 처리</span>
-                        <span id="fps-counter" class="text-slate-400 font-mono"></span>
+                        <span>
+                            <i class="fa-solid fa-shield-halved text-brand-500 mr-1"></i>
+                            브라우저 내 영상 분석
+                        </span>
+
+                        <span
+                            id="fps-counter"
+                            class="text-slate-400 font-mono"
+                        ></span>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: ANALYTICS -->
+            <!-- 운동 기록 및 분석 -->
             <div class="lg:col-span-5 flex flex-col space-y-6">
 
-                <!-- WORKOUT COUNTER & TIMER -->
                 <div class="glass-panel rounded-3xl p-6 shadow-xl shadow-slate-200/50 bg-gradient-to-br from-white via-slate-50 to-emerald-50/40 relative overflow-hidden">
                     <i class="fa-solid fa-stopwatch absolute -right-4 -bottom-4 text-8xl text-emerald-500/10 pointer-events-none"></i>
 
                     <div class="flex items-center justify-between mb-4">
-                        <span class="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Workout Tracker</span>
-                        <button onclick="resetStats()" class="text-xs text-slate-400 hover:text-slate-600 font-bold bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-                            <i class="fa-solid fa-rotate-right mr-1"></i> 초기화
+                        <span class="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
+                            Workout Tracker
+                        </span>
+
+                        <button
+                            type="button"
+                            id="btn-reset"
+                            class="text-xs text-slate-400 hover:text-slate-600 font-bold bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm"
+                        >
+                            <i class="fa-solid fa-rotate-right mr-1"></i>
+                            초기화
                         </button>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-center shadow-sm">
-                            <span class="text-xs font-bold text-slate-400 block mb-1">성공 횟수</span>
-                            <span id="rep-count" class="text-5xl font-black text-brand-600 tracking-tight">0</span>
-                            <span class="text-xs text-brand-500 font-extrabold block mt-1">회 달성</span>
+                            <span class="text-xs font-bold text-slate-400 block mb-1">
+                                성공 횟수
+                            </span>
+
+                            <span
+                                id="rep-count"
+                                class="text-5xl font-black text-brand-600 tracking-tight"
+                            >
+                                0
+                            </span>
+
+                            <span class="text-xs text-brand-500 font-extrabold block mt-1">
+                                회 달성
+                            </span>
                         </div>
 
                         <div class="bg-white border border-emerald-100 rounded-2xl p-4 text-center shadow-sm">
-                            <span class="text-xs font-bold text-slate-400 block mb-1">운동 시간</span>
-                            <span id="workout-timer" class="text-3xl font-black text-slate-800 tracking-tight font-mono my-2 block">00:00</span>
-                            <span class="text-xs text-slate-400 font-semibold block">진행 중</span>
+                            <span class="text-xs font-bold text-slate-400 block mb-1">
+                                운동 시간
+                            </span>
+
+                            <span
+                                id="workout-timer"
+                                class="text-3xl font-black text-slate-800 tracking-tight font-mono my-2 block"
+                            >
+                                00:00
+                            </span>
+
+                            <span
+                                id="timer-state"
+                                class="text-xs text-slate-400 font-semibold block"
+                            >
+                                대기 중
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <!-- LIVE PROBABILITIES -->
                 <div class="glass-panel rounded-3xl p-6 shadow-xl shadow-slate-200/50 flex-1 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-simple text-brand-500"></i> 자세 인식 분석
+                                <i class="fa-solid fa-chart-simple text-brand-500"></i>
+                                자세 인식 분석
                             </h3>
-                            <span class="text-xs text-slate-400">Confidence</span>
+
+                            <span class="text-xs text-slate-400">
+                                Confidence
+                            </span>
                         </div>
 
                         <div id="label-container" class="space-y-4 my-2">
                             <div class="text-center py-8 text-slate-400">
                                 <i class="fa-solid fa-person-rays text-4xl text-slate-300 mb-2 block"></i>
-                                <p class="text-xs font-medium">카메라를 연결하면 클래스별 정확도가 표시됩니다.</p>
+
+                                <p class="text-xs font-medium">
+                                    AI 모드에서 모델을 연결하면
+                                    클래스별 인식 확률이 표시됩니다.
+                                </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- VOICE FEEDBACK -->
+                    <!-- 음성 피드백 -->
                     <div class="mt-6 pt-5 border-t border-slate-200/80">
                         <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center space-x-2">
                                 <i class="fa-solid fa-volume-high text-accent-orange text-lg"></i>
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-800">음성 피드백 (TTS)</h4>
-                                </div>
+
+                                <h4 class="text-sm font-bold text-slate-800">
+                                    음성 피드백 (TTS)
+                                </h4>
                             </div>
+
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="tts-toggle" class="sr-only peer" checked>
+                                <input
+                                    type="checkbox"
+                                    id="tts-toggle"
+                                    class="sr-only peer"
+                                    aria-label="음성 피드백 사용"
+                                    checked
+                                >
+
                                 <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
                             </label>
                         </div>
@@ -241,267 +510,1246 @@
                             <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md">
                                 <i class="fa-solid fa-bullhorn text-sm"></i>
                             </div>
-                            <p id="coach-message" class="text-xs font-bold text-amber-900 leading-snug">
-                                "준비가 되면 상단 시작 버튼을 누르세요!"
+
+                            <p
+                                id="coach-message"
+                                aria-live="polite"
+                                class="text-xs font-bold text-amber-900 leading-snug"
+                            >
+                                준비가 되면 상단 시작 버튼을 누르세요!
                             </p>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </main>
 
-    <!-- SCRIPT -->
-    <script type="text/javascript">
-        let model, webcam, ctx, labelContainer, maxPredictions;
-        let isRunning = false;
+    <script>
+    (() => {
+        'use strict';
 
-        let currentPose = "";
-        let previousPose = "";
-        let repCount = 0;
-        let lastVoiceTime = 0;
-        let timerInterval = null;
-        let secondsElapsed = 0;
+        // 테스트용 기본값입니다.
+        // 실제 모델의 판정 결과에 맞춰 조정하세요.
+        const CONFIG = Object.freeze({
+            confidence: 0.80,
+            margin: 0.15,
+            holdMs: 400,
+            minFrames: 3,
+            lostMs: 1500,
+            maxGapMs: 1200,
+            minRepMs: 1000,
+            poseScore: 0.35,
+            keypointScore: 0.40,
+            minBodyPoints: 4,
+            voiceGapMs: 3500,
+            maxFPS: 20
+        });
 
-        const colorPalette = [
-            'from-brand-500 to-emerald-400',
-            'from-orange-500 to-amber-400',
-            'from-cyan-500 to-blue-400',
-            'from-purple-500 to-indigo-400',
-            'from-pink-500 to-rose-400'
+        const $ = id => document.getElementById(id);
+        const canvas = $('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let session = null;
+        let reps = 0;
+        let elapsedMs = 0;
+        let startedAt = null;
+        let timerId = null;
+
+        let trackingVersion = 0;
+        let tracking;
+        let mappingModel = '';
+        let lastVoiceAt = -Infinity;
+
+        const rows = new Map();
+
+        const colors = [
+            '#22c55e',
+            '#f97316',
+            '#06b6d4',
+            '#8b5cf6',
+            '#ec4899'
         ];
 
-        async function toggleCamera() {
-            const btnText = document.getElementById("btn-text");
-            const btnIcon = document.getElementById("btn-icon");
-            const btnStart = document.getElementById("btn-start");
-            
-            const modelInput = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
+        function resetTracking() {
+            trackingVersion++;
 
-            if (!isRunning) {
-                btnText.innerText = "권한 요청 중...";
-                btnIcon.className = "fa-solid fa-spinner fa-spin";
-                btnStart.disabled = true;
+            tracking = {
+                candidate: '',
+                since: 0,
+                frames: 0,
+                stable: '',
+                phase: 'need-up',
+                lastValid: null,
+                lastSample: null,
+                lastRep: -Infinity
+            };
+        }
 
-                try {
-                    // [핵심] 버튼을 누르는 순간 웹사이트가 브라우저에 명시적으로 카메라 권한 팝업을 띄우도록 요청합니다.
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    
-                    // 권한을 얻은 후, 티처블 머신 캠 객체와 충돌나지 않도록 임시 스트림은 정리합니다.
-                    stream.getTracks().forEach(track => track.stop());
+        resetTracking();
 
-                    const URL = modelInput.endsWith("/") ? modelInput : modelInput + "/";
-                    const modelURL = URL + "model.json";
-                    const metadataURL = URL + "metadata.json";
+        // 화면 안내와 음성 재생을 분리합니다.
+        function coach(text, force = false, voice = true) {
+            $('coach-message').textContent = text;
 
-                    // AI 모델 로드
-                    model = await tmPose.load(modelURL, metadataURL);
-                    maxPredictions = model.getTotalClasses();
+            if (
+                !voice ||
+                !$('tts-toggle').checked ||
+                !('speechSynthesis' in window)
+            ) {
+                return;
+            }
 
-                    const width = 640;
-                    const height = 480;
-                    const flip = true; 
-                    webcam = new tmPose.Webcam(width, height, flip); 
-                    await webcam.setup(); // 웹캠 최종 연결
-                    await webcam.play();
-                    window.requestAnimationFrame(loop);
+            const now = performance.now();
 
-                    const canvas = document.getElementById("canvas");
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx = canvas.getContext("2d");
-                    canvas.classList.remove("hidden");
-                    document.getElementById("cam-placeholder").classList.add("hidden");
+            if (
+                !force &&
+                (
+                    now - lastVoiceAt < CONFIG.voiceGapMs ||
+                    speechSynthesis.speaking
+                )
+            ) {
+                return;
+            }
 
-                    document.getElementById("status-dot").className = "w-3 h-3 rounded-full bg-brand-500 animate-ping";
-                    document.getElementById("status-text").innerText = "실시간 분석 중";
-                    document.getElementById("status-text").className = "text-xs font-bold text-brand-600 uppercase tracking-wider";
-                    document.getElementById("live-pose-badge").classList.remove("hidden");
-
-                    setupLabelContainer();
-
-                    btnText.innerText = "정지";
-                    btnIcon.className = "fa-solid fa-stop";
-                    btnStart.disabled = false;
-                    isRunning = true;
-
-                    startTimer();
-                    speakCoach("트레이닝을 시작합니다.");
-                } catch (err) {
-                    console.error("Camera Error:", err);
-                    alert("카메라 권한 요청이 거부되었거나 사용 중입니다.\n(참고: 브라우저 보안 정책상 반드시 로컬 서버나 웹 주소(http/https) 환경에서 실행해야 권한 창이 정상적으로 뜹니다.)");
-                    btnText.innerText = "트레이닝 시작";
-                    btnIcon.className = "fa-solid fa-video";
-                    btnStart.disabled = false;
+            try {
+                if (force) {
+                    speechSynthesis.cancel();
                 }
-            } else {
-                if (webcam) {
-                    await webcam.stop();
+
+                const speech = new SpeechSynthesisUtterance(text);
+                speech.lang = 'ko-KR';
+                speech.rate = 1.05;
+
+                const localVoice = speechSynthesis.getVoices().find(
+                    voice => voice.localService && voice.lang.startsWith('ko')
+                );
+
+                if (localVoice) {
+                    speech.voice = localVoice;
                 }
-                isRunning = false;
 
-                document.getElementById("canvas").classList.add("hidden");
-                document.getElementById("cam-placeholder").classList.remove("hidden");
-                document.getElementById("status-dot").className = "w-3 h-3 rounded-full bg-slate-400";
-                document.getElementById("status-text").innerText = "대기 중";
-                document.getElementById("status-text").className = "text-xs font-bold text-slate-500 uppercase tracking-wider";
-                document.getElementById("live-pose-badge").classList.add("hidden");
-
-                btnText.innerText = "트레이닝 시작";
-                btnIcon.className = "fa-solid fa-video";
-                btnStart.disabled = false;
-                
-                stopTimer();
-                speakCoach("운동을 완료했습니다.");
+                speechSynthesis.speak(speech);
+                lastVoiceAt = now;
+            } catch (err) {
+                console.warn('음성 안내 오류:', err);
             }
         }
 
-        async function loop(timestamp) {
-            if (!isRunning) return;
-            webcam.update();
-            await predict();
-            window.requestAnimationFrame(loop);
+        function renderTimer() {
+            const runningMs = startedAt === null
+                ? 0
+                : performance.now() - startedAt;
+
+            const total = Math.floor((elapsedMs + runningMs) / 1000);
+
+            const minutes = String(
+                Math.floor(total / 60)
+            ).padStart(2, '0');
+
+            const seconds = String(
+                total % 60
+            ).padStart(2, '0');
+
+            $('workout-timer').textContent = `${minutes}:${seconds}`;
         }
 
-        async function predict() {
-            const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
-            const prediction = await model.predict(posenetOutput);
-
-            let highestProbability = 0;
-            let dominantClass = "";
-
-            for (let i = 0; i < maxPredictions; i++) {
-                const className = prediction[i].className;
-                const probability = prediction[i].probability;
-
-                if (probability > highestProbability) {
-                    highestProbability = probability;
-                    dominantClass = className;
-                }
-
-                const barFill = document.getElementById(`bar-fill-${i}`);
-                const scoreText = document.getElementById(`score-text-${i}`);
-                if (barFill && scoreText) {
-                    const percent = (probability * 100).toFixed(0);
-                    barFill.style.width = `${percent}%`;
-                    scoreText.innerText = `${percent}%`;
-                }
+        function pauseTimer() {
+            if (startedAt !== null) {
+                elapsedMs += performance.now() - startedAt;
             }
 
-            if (highestProbability > 0.65) {
-                currentPose = dominantClass;
-                document.getElementById("badge-pose-name").innerText = currentPose;
-                handleWorkoutState(currentPose);
-            }
+            startedAt = null;
 
-            drawPose(pose);
-        }
+            clearInterval(timerId);
+            timerId = null;
 
-        function drawPose(pose) {
-            if (webcam.canvas) {
-                ctx.drawImage(webcam.canvas, 0, 0);
-                if (pose) {
-                    const minPartConfidence = 0.5;
-                    tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
-                    tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
-                }
-            }
-        }
-
-        function setupLabelContainer() {
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = "";
-
-            for (let i = 0; i < maxPredictions; i++) {
-                const className = model.getClassLabels()[i];
-                const gradientClass = colorPalette[i % colorPalette.length];
-
-                const wrapper = document.createElement("div");
-                wrapper.className = "bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm";
-                
-                wrapper.innerHTML = `
-                    <div class="flex justify-between items-center mb-1.5">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                            <span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>
-                            ${className}
-                        </span>
-                        <span id="score-text-${i}" class="text-xs font-extrabold text-slate-800 font-mono">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200/50">
-                        <div id="bar-fill-${i}" class="bg-gradient-to-r ${gradientClass} h-3 rounded-full transition-all duration-200" style="width: 0%"></div>
-                    </div>
-                `;
-                labelContainer.appendChild(wrapper);
-            }
-        }
-
-        function handleWorkoutState(pose) {
-            if (pose !== previousPose) {
-                const now = Date.now();
-                const lowerPose = pose.toLowerCase();
-                const prevLower = previousPose.toLowerCase();
-
-                if ((prevLower.includes("down") || prevLower.includes("squat")) && 
-                    (lowerPose.includes("up") || lowerPose.includes("stand") || lowerPose.includes("good"))) {
-                    repCount++;
-                    document.getElementById("rep-count").innerText = repCount;
-                    speakCoach(`${repCount}회 달성!`, true);
-                } else if (lowerPose.includes("bad") || lowerPose.includes("wrong")) {
-                    if (now - lastVoiceTime > 3500) { 
-                        speakCoach("자세를 점검해주세요!");
-                        lastVoiceTime = now;
-                    }
-                }
-                previousPose = pose;
-            }
+            renderTimer();
         }
 
         function startTimer() {
-            secondsElapsed = 0;
-            updateTimerDisplay();
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                secondsElapsed++;
-                updateTimerDisplay();
-            }, 1000);
-        }
+            startedAt = performance.now();
 
-        function stopTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-        }
+            clearInterval(timerId);
+            timerId = setInterval(renderTimer, 250);
 
-        function updateTimerDisplay() {
-            const mins = Math.floor(secondsElapsed / 60).toString().padStart(2, '0');
-            const secs = (secondsElapsed % 60).toString().padStart(2, '0');
-            const timerEl = document.getElementById("workout-timer");
-            if (timerEl) timerEl.innerText = `${mins}:${secs}`;
+            renderTimer();
         }
 
         function resetStats() {
-            repCount = 0;
-            secondsElapsed = 0;
-            const repEl = document.getElementById("rep-count");
-            if (repEl) repEl.innerText = "0";
-            updateTimerDisplay();
+            reps = 0;
+            elapsedMs = 0;
+
+            if (startedAt !== null) {
+                startedAt = performance.now();
+            }
+
+            $('rep-count').textContent = '0';
+
+            resetTracking();
+            clearScores();
+
+            $('badge-pose-name').textContent =
+                session && session.preview
+                    ? '카메라 테스트'
+                    : '자세 확인 중...';
+
+            lastVoiceAt = -Infinity;
+
+            renderTimer();
+
+            coach(
+                '횟수와 시간을 초기화했습니다. 준비 자세부터 다시 시작하세요.',
+                true
+            );
         }
 
-        function speakCoach(text, force = false) {
-            const ttsToggle = document.getElementById("tts-toggle");
-            if (!ttsToggle || !ttsToggle.checked) return;
+        function setStatus(text, tone = 'idle') {
+            const color = {
+                idle: '#94a3b8',
+                loading: '#f59e0b',
+                active: '#22c55e',
+                error: '#ef4444'
+            }[tone];
 
-            const coachMsg = document.getElementById("coach-message");
-            if (coachMsg) coachMsg.innerText = `"${text}"`;
+            $('status-text').textContent = text;
+            $('status-dot').style.backgroundColor = color;
+            $('header-status').textContent = text;
+        }
 
-            if ('speechSynthesis' in window) {
-                if (!force && window.speechSynthesis.speaking) return;
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ko-KR';
-                utterance.rate = 1.1;
-                window.speechSynthesis.speak(utterance);
+        function setControls(active, starting = false) {
+            $('session-settings').disabled = active;
+
+            $('btn-text').textContent = active
+                ? (starting ? '시작 취소' : '정지')
+                : '트레이닝 시작';
+
+            $('btn-icon').className = active
+                ? 'fa-solid fa-stop'
+                : 'fa-solid fa-video';
+
+            $('btn-start').setAttribute(
+                'aria-pressed',
+                String(active)
+            );
+
+            const disableMapping =
+                !active || starting || !!session?.preview;
+
+            $('up-class').disabled = disableMapping;
+            $('down-class').disabled = disableMapping;
+        }
+
+        function clearScores() {
+            rows.forEach(row => {
+                row.fill.style.width = '0%';
+                row.score.textContent = '—';
+            });
+        }
+
+        function showError(stage, err) {
+            const cameraErrors = {
+                NotAllowedError:
+                    '카메라 접근이 허용되지 않았습니다. 브라우저의 사이트 권한과 미리보기 웹사이트의 카메라 허용 설정을 확인하세요.',
+
+                PermissionDeniedError:
+                    '카메라 권한이 거부되었습니다. 사이트 권한에서 카메라를 허용하세요.',
+
+                NotFoundError:
+                    '사용할 수 있는 카메라를 찾지 못했습니다. 연결 상태를 확인하세요.',
+
+                NotReadableError:
+                    '카메라를 열지 못했습니다. 다른 앱의 사용 여부와 운영체제의 카메라 권한을 확인하세요.',
+
+                OverconstrainedError:
+                    '요청한 카메라 설정을 지원하지 않습니다. 다른 카메라나 브라우저에서 확인하세요.',
+
+                SecurityError:
+                    '현재 웹사이트의 보안 정책이 카메라 사용을 차단했습니다.',
+
+                AbortError:
+                    '카메라 연결이 중단되었습니다. 다시 시작하세요.'
+            };
+
+            let message;
+
+            if (stage === '카메라') {
+                message =
+                    cameraErrors[err?.name] ||
+                    '카메라 영상을 시작하지 못했습니다. 권한과 연결 상태를 확인하세요.';
+            } else if (stage === '모델') {
+                message =
+                    'AI 모델을 불러오지 못했습니다. 실제 포즈(Pose) 모델 주소인지, 모델 파일 공개 여부와 네트워크·CORS 설정을 확인하세요.';
+            } else if (stage === '분석') {
+                message =
+                    'AI 분석 중 오류가 발생해 정지했습니다. 포즈 모델과 브라우저의 그래픽 지원 상태를 확인하세요.';
+            } else {
+                message = err?.message || String(err);
+            }
+
+            $('error-message').textContent = message;
+
+            $('error-detail').textContent =
+                `[${stage}] ${err?.name || 'Error'}: ` +
+                `${err?.message || String(err)}`;
+
+            $('error-box').hidden = false;
+
+            setStatus('오류 · 설정 확인', 'error');
+            coach(message, false, false);
+        }
+
+        function modelBaseURL(value) {
+            const text = value.trim();
+
+            if (
+                !text ||
+                /YOUR_MODEL_ID|MODEL_ID|실제모델ID/i.test(text)
+            ) {
+                throw new Error(
+                    '실제 Teachable Machine 포즈 모델 주소를 입력하세요. 모델이 없으면 ‘카메라만 테스트’를 선택하세요.'
+                );
+            }
+
+            let url;
+
+            try {
+                url = new URL(text);
+            } catch {
+                throw new Error(
+                    '모델 주소를 https://로 시작하는 전체 주소로 입력하세요.'
+                );
+            }
+
+            const local = [
+                'localhost',
+                '127.0.0.1',
+                '[::1]'
+            ].includes(url.hostname);
+
+            if (
+                url.protocol !== 'https:' &&
+                !(local && url.protocol === 'http:')
+            ) {
+                throw new Error(
+                    '모델은 HTTPS 주소 또는 로컬 개발 서버 주소를 사용하세요.'
+                );
+            }
+
+            if (
+                url.username ||
+                url.password ||
+                url.search
+            ) {
+                throw new Error(
+                    '인증 정보나 쿼리가 없는 모델 폴더 주소를 입력하세요.'
+                );
+            }
+
+            url.hash = '';
+
+            url.pathname = url.pathname
+                .replace(/(?:model|metadata)\.json$/i, '')
+                .replace(/\/*$/, '/');
+
+            return url.href;
+        }
+
+        // 일반적인 클래스 이름만 자동 제안합니다.
+        // 이름이 다르거나 모호하면 화면에서 직접 선택합니다.
+        function suggestRole(label) {
+            const text = label
+                .toLowerCase()
+                .replace(/[\s_\-()]+/g, '');
+
+            const up = [
+                'up',
+                'stand',
+                'standing',
+                'standup',
+                'squatup',
+                '서기',
+                '선자세',
+                '일어서기',
+                '준비자세',
+                '복귀자세'
+            ];
+
+            const down = [
+                'down',
+                'squat',
+                'squatdown',
+                'squatting',
+                'sit',
+                'sitting',
+                '앉기',
+                '앉은자세',
+                '스쿼트',
+                '내려가기'
+            ];
+
+            if (up.includes(text)) return 'up';
+            if (down.includes(text)) return 'down';
+
+            return '';
+        }
+
+        function setupLabels(labels, url) {
+            const previous = mappingModel === url
+                ? {
+                    up: $('up-class').value,
+                    down: $('down-class').value
+                }
+                : {};
+
+            mappingModel = url;
+
+            rows.clear();
+            $('label-container').replaceChildren();
+
+            ['up', 'down'].forEach(role => {
+                const select = $(role + '-class');
+
+                select.replaceChildren(
+                    new Option('선택하세요', '')
+                );
+
+                labels.forEach(label => {
+                    select.add(new Option(label, label));
+                });
+
+                const matches = labels.filter(
+                    label => suggestRole(label) === role
+                );
+
+                select.value = labels.includes(previous[role])
+                    ? previous[role]
+                    : matches.length === 1
+                        ? matches[0]
+                        : '';
+            });
+
+            labels.forEach((label, i) => {
+                const wrapper = document.createElement('div');
+
+                wrapper.className =
+                    'bg-white p-3 rounded-2xl border border-slate-200 shadow-sm';
+
+                const heading = document.createElement('div');
+
+                heading.className =
+                    'flex justify-between items-center gap-3 mb-2 text-xs font-bold';
+
+                // 모델의 클래스 이름을 HTML로 삽입하지 않습니다.
+                const name = document.createElement('span');
+                name.className = 'break-all';
+                name.textContent = label;
+
+                const score = document.createElement('span');
+                score.textContent = '—';
+                score.className = 'font-mono shrink-0';
+
+                heading.append(name, score);
+
+                const track = document.createElement('div');
+
+                track.className =
+                    'w-full bg-slate-100 rounded-full h-3 overflow-hidden';
+
+                const fill = document.createElement('div');
+
+                fill.className =
+                    'h-3 rounded-full transition-all duration-150';
+
+                fill.style.background = colors[i % colors.length];
+                fill.style.width = '0%';
+
+                track.append(fill);
+                wrapper.append(heading, track);
+
+                $('label-container').append(wrapper);
+
+                rows.set(label, { fill, score });
+            });
+
+            mappingChanged();
+
+            if (!validMapping()) {
+                $('class-settings').open = true;
             }
         }
+
+        function validMapping() {
+            const up = $('up-class').value;
+            const down = $('down-class').value;
+
+            return !!up && !!down && up !== down;
+        }
+
+        function mappingChanged() {
+            resetTracking();
+
+            const valid = validMapping();
+
+            $('mapping-note').textContent = valid
+                ? `${$('up-class').value} → ${$('down-class').value} → ${$('up-class').value} = 1회. 자동 선택된 항목이 맞는지 확인하세요.`
+                : '준비·복귀 자세와 동작 자세를 서로 다르게 선택하세요. 미설정 상태에서는 인식만 하고 횟수는 올리지 않습니다.';
+
+            $('mapping-note').style.color = valid
+                ? '#15803d'
+                : '#b45309';
+
+            if (session?.running && !session.preview) {
+                coach(
+                    valid
+                        ? '설정이 변경됐습니다. 준비 자세부터 시작하세요.'
+                        : '횟수 판정 설정에서 두 자세를 선택하세요.',
+                    false,
+                    false
+                );
+            }
+        }
+
+        function roleFor(label) {
+            if (validMapping()) {
+                if (label === $('up-class').value) return 'up';
+                if (label === $('down-class').value) return 'down';
+            }
+
+            const isBad =
+                /(^|[^a-z])(bad|wrong)([^a-z]|$)|잘못|불량|오류/i.test(label);
+
+            return isBad ? 'bad' : 'other';
+        }
+
+        // 안정적으로 유지된 자세만 횟수 계산에 사용합니다.
+        function observe(role, valid, now) {
+            if (
+                tracking.lastSample !== null &&
+                now - tracking.lastSample > CONFIG.maxGapMs
+            ) {
+                resetTracking();
+            }
+
+            tracking.lastSample = now;
+
+            if (!valid) {
+                tracking.candidate = '';
+                tracking.frames = 0;
+
+                if (
+                    tracking.lastValid !== null &&
+                    now - tracking.lastValid >= CONFIG.lostMs
+                ) {
+                    resetTracking();
+
+                    coach(
+                        '자세 인식이 끊겼습니다. 화면 안에서 준비 자세부터 다시 시작하세요.',
+                        false,
+                        false
+                    );
+                }
+
+                return;
+            }
+
+            tracking.lastValid = now;
+
+            if (tracking.candidate !== role) {
+                tracking.candidate = role;
+                tracking.since = now;
+                tracking.frames = 1;
+                return;
+            }
+
+            tracking.frames++;
+
+            if (
+                now - tracking.since < CONFIG.holdMs ||
+                tracking.frames < CONFIG.minFrames ||
+                tracking.stable === role
+            ) {
+                return;
+            }
+
+            tracking.stable = role;
+
+            if (role === 'bad') {
+                tracking.phase = 'need-up';
+
+                coach(
+                    '주의 자세로 분류됐습니다. 자세를 확인하고 준비 자세로 돌아오세요.'
+                );
+
+                return;
+            }
+
+            if (!validMapping()) return;
+
+            if (role === 'up') {
+                const completed =
+                    tracking.phase === 'need-return' &&
+                    now - tracking.lastRep >= CONFIG.minRepMs;
+
+                if (completed) {
+                    reps++;
+                    tracking.lastRep = now;
+
+                    $('rep-count').textContent = String(reps);
+
+                    coach(`${reps}회 달성!`, true);
+                } else {
+                    coach(
+                        '준비 자세가 확인됐습니다. 동작을 시작하세요.',
+                        false,
+                        false
+                    );
+                }
+
+                tracking.phase = 'ready';
+            } else if (role === 'down') {
+                if (tracking.phase === 'ready') {
+                    tracking.phase = 'need-return';
+
+                    coach(
+                        '동작 자세가 확인됐습니다. 준비 자세로 돌아오세요.',
+                        false,
+                        false
+                    );
+                } else {
+                    coach(
+                        '먼저 준비 자세를 보여주세요.',
+                        false,
+                        false
+                    );
+                }
+            } else {
+                tracking.phase = 'need-up';
+            }
+        }
+
+        function active(s) {
+            return session === s && !s.stopped;
+        }
+
+        function stopTracks(stream) {
+            stream?.getTracks().forEach(track => track.stop());
+        }
+
+        function disposeModel(s) {
+            if (
+                !s.stopped ||
+                s.loading ||
+                s.processing ||
+                !s.model
+            ) {
+                return;
+            }
+
+            const model = s.model;
+            s.model = null;
+
+            // pose@0.8.3의 포즈 추정기 및 분류기 자원을 정리합니다.
+            try {
+                model.dispose?.();
+            } catch (err) {
+                console.warn(err);
+            }
+
+            try {
+                if (!model.model?.isDisposedInternal) {
+                    model.model?.dispose();
+                }
+            } catch (err) {
+                console.warn(err);
+            }
+        }
+
+        function stopSession(
+            message = '정지했습니다. 다시 시작하면 횟수와 시간이 이어집니다.'
+        ) {
+            const s = session;
+            session = null;
+
+            if (s) {
+                s.stopped = true;
+
+                cancelAnimationFrame(s.raf);
+                stopTracks(s.stream);
+
+                s.video.pause();
+                s.video.srcObject = null;
+                s.video.remove();
+
+                disposeModel(s);
+            }
+
+            pauseTimer();
+            resetTracking();
+            clearScores();
+
+            canvas.classList.add('hidden');
+
+            $('cam-placeholder').classList.remove('hidden');
+            $('live-pose-badge').classList.add('hidden');
+
+            $('fps-counter').textContent = '';
+            $('timer-state').textContent = '정지 · 기록 유지';
+
+            setControls(false);
+            setStatus('대기 중');
+
+            try {
+                window.speechSynthesis?.cancel();
+            } catch {}
+
+            coach(message, false, false);
+        }
+
+        function captureFrame(s) {
+            const video = s.video;
+            const target = s.frame;
+            const context = s.frameCtx;
+
+            if (
+                video.readyState < 2 ||
+                !video.videoWidth ||
+                !video.videoHeight
+            ) {
+                return false;
+            }
+
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            const ratio = target.width / target.height;
+
+            let sw = vw;
+            let sh = vh;
+
+            // 화면을 늘려 찌그러뜨리지 않고 중앙 영역을 사용합니다.
+            if (vw / vh > ratio) {
+                sw = vh * ratio;
+            } else {
+                sh = vw / ratio;
+            }
+
+            context.save();
+
+            if (s.mirror) {
+                context.translate(target.width, 0);
+                context.scale(-1, 1);
+            }
+
+            context.drawImage(
+                video,
+                (vw - sw) / 2,
+                (vh - sh) / 2,
+                sw,
+                sh,
+                0,
+                0,
+                target.width,
+                target.height
+            );
+
+            context.restore();
+
+            return true;
+        }
+
+        function personVisible(pose) {
+            if (!pose || pose.score < CONFIG.poseScore) {
+                return false;
+            }
+
+            const visibleBodyPoints = pose.keypoints.filter(
+                point =>
+                    !/nose|eye|ear/i.test(point.part) &&
+                    point.score >= CONFIG.keypointScore
+            );
+
+            return visibleBodyPoints.length >= CONFIG.minBodyPoints;
+        }
+
+        async function loop(s, timestamp) {
+            if (!active(s)) return;
+
+            if (
+                timestamp - s.lastFrame <
+                1000 / CONFIG.maxFPS
+            ) {
+                s.raf = requestAnimationFrame(
+                    time => loop(s, time)
+                );
+
+                return;
+            }
+
+            s.lastFrame = timestamp;
+            s.processing = true;
+
+            // 초기화 또는 설정 변경 전의 추론 결과를 무시하기 위한 값입니다.
+            const version = trackingVersion;
+
+            try {
+                if (captureFrame(s)) {
+                    let pose = null;
+                    let predictions = [];
+
+                    if (!s.preview) {
+                        const result = await s.model.estimatePose(
+                            s.frame
+                        );
+
+                        if (!active(s)) return;
+
+                        pose = result.pose;
+
+                        if (personVisible(pose)) {
+                            predictions = await s.model.predict(
+                                result.posenetOutput
+                            );
+                        }
+
+                        if (!active(s)) return;
+                    }
+
+                    ctx.drawImage(s.frame, 0, 0);
+
+                    if (pose) {
+                        tmPose.drawKeypoints(
+                            pose.keypoints,
+                            0.5,
+                            ctx
+                        );
+
+                        tmPose.drawSkeleton(
+                            pose.keypoints,
+                            0.5,
+                            ctx
+                        );
+                    }
+
+                    if (
+                        !s.preview &&
+                        version === trackingVersion
+                    ) {
+                        if (!predictions.length) {
+                            clearScores();
+
+                            $('badge-pose-name').textContent =
+                                '몸 전체가 보이도록 서주세요';
+
+                            observe(
+                                '',
+                                false,
+                                performance.now()
+                            );
+                        } else {
+                            predictions.forEach(prediction => {
+                                const row = rows.get(
+                                    prediction.className
+                                );
+
+                                if (!row) return;
+
+                                const percent = Math.round(
+                                    Math.max(
+                                        0,
+                                        Math.min(
+                                            1,
+                                            prediction.probability
+                                        )
+                                    ) * 100
+                                );
+
+                                row.fill.style.width = `${percent}%`;
+                                row.score.textContent = `${percent}%`;
+                            });
+
+                            const sorted = [...predictions].sort(
+                                (a, b) => b.probability - a.probability
+                            );
+
+                            const top = sorted[0];
+                            const secondProbability =
+                                sorted[1]?.probability || 0;
+
+                            const certain =
+                                top.probability >= CONFIG.confidence &&
+                                top.probability - secondProbability >= CONFIG.margin;
+
+                            $('badge-pose-name').textContent = certain
+                                ? top.className
+                                : '판정 보류 · 자세를 유지하세요';
+
+                            observe(
+                                roleFor(top.className),
+                                certain,
+                                performance.now()
+                            );
+                        }
+                    }
+
+                    s.frames++;
+
+                    const now = performance.now();
+
+                    if (now - s.fpsAt >= 1000) {
+                        const fps = (
+                            s.frames * 1000 / (now - s.fpsAt)
+                        ).toFixed(1);
+
+                        $('fps-counter').textContent =
+                            `${s.preview ? '화면' : '분석'} ${fps} FPS`;
+
+                        s.frames = 0;
+                        s.fpsAt = now;
+                    }
+                } else {
+                    $('badge-pose-name').textContent =
+                        '카메라 프레임 대기 중...';
+
+                    if (!s.preview) {
+                        observe(
+                            '',
+                            false,
+                            performance.now()
+                        );
+                    }
+                }
+            } catch (err) {
+                if (active(s)) {
+                    stopSession();
+
+                    showError(
+                        s.preview ? '카메라' : '분석',
+                        err
+                    );
+                }
+            } finally {
+                s.processing = false;
+
+                disposeModel(s);
+
+                // 정지된 세션의 반복 루프가 다시 시작되지 않도록 합니다.
+                if (active(s)) {
+                    s.raf = requestAnimationFrame(
+                        time => loop(s, time)
+                    );
+                }
+            }
+        }
+
+        async function toggleCamera() {
+            if (session) {
+                stopSession();
+                return;
+            }
+
+            $('error-box').hidden = true;
+
+            let stage = '설정';
+            let s = null;
+
+            try {
+                const preview = $('preview-only').checked;
+
+                const url = preview
+                    ? ''
+                    : modelBaseURL($('model-url').value);
+
+                if (!window.isSecureContext) {
+                    throw new Error(
+                        '카메라 사용을 위해 HTTPS 또는 localhost에서 실행하세요. 일반 HTTP 웹주소에서는 차단될 수 있습니다.'
+                    );
+                }
+
+                if (!navigator.mediaDevices?.getUserMedia) {
+                    throw new Error(
+                        '이 실행 환경에서 카메라 API를 사용할 수 없습니다. 카메라를 지원하는 브라우저의 결과 페이지에서 여세요.'
+                    );
+                }
+
+                const policy =
+                    document.permissionsPolicy ||
+                    document.featurePolicy;
+
+                if (
+                    policy?.allowsFeature &&
+                    !policy.allowsFeature('camera')
+                ) {
+                    throw new Error(
+                        '현재 미리보기 프레임이 카메라 사용을 차단했습니다. 결과 페이지를 새 탭으로 열거나 해당 서비스의 카메라 권한 설정을 확인하세요.'
+                    );
+                }
+
+                if (!ctx) {
+                    throw new Error(
+                        '이 브라우저에서 Canvas 2D를 사용할 수 없습니다.'
+                    );
+                }
+
+                if (
+                    !preview &&
+                    (!window.tf || !window.tmPose)
+                ) {
+                    throw new Error(
+                        'AI 라이브러리를 불러오지 못했습니다. 인터넷 연결 및 외부 스크립트 차단 설정을 확인하세요.'
+                    );
+                }
+
+                const video = document.createElement('video');
+
+                video.muted = true;
+                video.playsInline = true;
+                video.autoplay = true;
+
+                video.setAttribute('playsinline', '');
+                video.setAttribute('aria-hidden', 'true');
+
+                video.style.cssText =
+                    'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;bottom:0;';
+
+                document.body.append(video);
+
+                const frame = document.createElement('canvas');
+
+                frame.width = preview ? 640 : 480;
+                frame.height = 480;
+
+                s = {
+                    preview,
+                    mirror: $('mirror-camera').checked,
+                    video,
+                    frame,
+                    frameCtx: frame.getContext('2d'),
+                    stream: null,
+                    model: null,
+                    stopped: false,
+                    loading: true,
+                    processing: false,
+                    running: false,
+                    raf: 0,
+                    lastFrame: 0,
+                    frames: 0,
+                    fpsAt: performance.now()
+                };
+
+                session = s;
+
+                resetTracking();
+                setControls(true, true);
+                setStatus('카메라 권한 확인 중...', 'loading');
+
+                stage = '카메라';
+
+                // 임시 스트림을 만들지 않고 이 스트림 하나만 사용합니다.
+                s.stream = await navigator.mediaDevices.getUserMedia({
+                    audio: false,
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        frameRate: {
+                            ideal: 24,
+                            max: 30
+                        }
+                    }
+                });
+
+                // 권한 요청 중 취소했으면 늦게 도착한 스트림도 종료합니다.
+                if (!active(s)) {
+                    stopTracks(s.stream);
+                    return;
+                }
+
+                s.stream.getVideoTracks().forEach(track => {
+                    track.addEventListener(
+                        'ended',
+                        () => {
+                            if (active(s)) {
+                                stopSession();
+
+                                showError(
+                                    '카메라',
+                                    new Error('카메라 연결이 끊겼습니다.')
+                                );
+                            }
+                        },
+                        { once: true }
+                    );
+                });
+
+                video.srcObject = s.stream;
+
+                await video.play();
+
+                if (!active(s)) return;
+
+                if (!preview) {
+                    stage = '모델';
+
+                    setStatus(
+                        'AI 모델 불러오는 중...',
+                        'loading'
+                    );
+
+                    coach(
+                        'AI 모델을 불러오고 있습니다. 시작 취소 버튼으로 중단할 수 있습니다.',
+                        false,
+                        false
+                    );
+
+                    await tf.ready();
+
+                    if (!active(s)) return;
+
+                    s.model = await tmPose.load(
+                        url + 'model.json',
+                        url + 'metadata.json'
+                    );
+
+                    if (!active(s)) return;
+
+                    const labels = s.model.getClassLabels();
+
+                    const invalidLabels =
+                        !Array.isArray(labels) ||
+                        labels.length !== s.model.getTotalClasses() ||
+                        labels.length < 1 ||
+                        labels.some(
+                            label =>
+                                typeof label !== 'string' ||
+                                !label.trim()
+                        ) ||
+                        new Set(labels).size !== labels.length;
+
+                    if (invalidLabels) {
+                        throw new Error(
+                            '모델의 클래스 이름이 없거나 중복되어 있습니다. 모델 내보내기를 확인하세요.'
+                        );
+                    }
+
+                    setupLabels(labels, url);
+                } else {
+                    rows.clear();
+
+                    $('label-container').textContent =
+                        '카메라 테스트 중입니다. AI 분석과 횟수 계산은 실행하지 않습니다.';
+                }
+
+                canvas.width = frame.width;
+                canvas.height = frame.height;
+
+                canvas.classList.remove('hidden');
+
+                $('cam-placeholder').classList.add('hidden');
+                $('live-pose-badge').classList.remove('hidden');
+
+                $('badge-pose-name').textContent = preview
+                    ? '카메라 테스트'
+                    : '자세 확인 중...';
+
+                s.running = true;
+                s.fpsAt = performance.now();
+
+                setControls(true);
+
+                setStatus(
+                    preview
+                        ? '카메라 테스트 중'
+                        : '실시간 분석 중',
+                    'active'
+                );
+
+                $('timer-state').textContent = preview
+                    ? '테스트 · 시간 미집계'
+                    : '진행 중';
+
+                if (!preview) {
+                    startTimer();
+                }
+
+                coach(
+                    preview
+                        ? '카메라 테스트를 시작합니다.'
+                        : validMapping()
+                            ? '트레이닝을 시작합니다. 준비 자세를 보여주세요.'
+                            : '횟수 판정 설정에서 두 자세를 선택하세요.',
+                    true
+                );
+
+                s.raf = requestAnimationFrame(
+                    time => loop(s, time)
+                );
+            } catch (err) {
+                if (!s || active(s)) {
+                    stopSession();
+                    showError(stage, err);
+                }
+            } finally {
+                if (s) {
+                    s.loading = false;
+                    disposeModel(s);
+                }
+            }
+        }
+
+        $('btn-start').addEventListener(
+            'click',
+            toggleCamera
+        );
+
+        $('btn-reset').addEventListener(
+            'click',
+            resetStats
+        );
+
+        $('up-class').addEventListener(
+            'change',
+            mappingChanged
+        );
+
+        $('down-class').addEventListener(
+            'change',
+            mappingChanged
+        );
+
+        $('tts-toggle').addEventListener('change', () => {
+            if (!$('tts-toggle').checked) {
+                try {
+                    window.speechSynthesis?.cancel();
+                } catch {}
+            }
+        });
+
+        // 탭을 떠나면 카메라 및 분석을 정지하고 기록은 유지합니다.
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && session) {
+                stopSession(
+                    '다른 화면으로 이동해 정지했습니다. 돌아온 뒤 시작 버튼을 누르세요.'
+                );
+            }
+        });
+
+        window.addEventListener('pagehide', () => {
+            stopSession();
+        });
+
+        if (!('speechSynthesis' in window)) {
+            $('tts-toggle').checked = false;
+            $('tts-toggle').disabled = true;
+
+            $('tts-toggle').setAttribute(
+                'aria-label',
+                '이 브라우저는 음성 안내를 지원하지 않습니다'
+            );
+        }
+
+        setControls(false);
+        renderTimer();
+    })();
     </script>
 </body>
 </html>
