@@ -159,7 +159,7 @@
                                 <i class="fa-solid fa-camera-retro"></i>
                             </div>
                             <h3 class="text-lg font-bold text-slate-200 mb-1">웹캠 카메라가 꺼져 있습니다</h3>
-                            <p class="text-xs text-slate-400 max-w-sm">상단의 [트레이닝 시작] 버튼을 누르면 권한 창이 표시됩니다.</p>
+                            <p class="text-xs text-slate-400 max-w-sm">상단의 [트레이닝 시작] 버튼을 누르면 권한 요청 창이 뜹니다.</p>
                         </div>
 
                         <div id="live-pose-badge" class="absolute top-4 left-4 bg-slate-900/80 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-xl hidden flex items-center gap-2 shadow-lg">
@@ -280,31 +280,33 @@
             const modelInput = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
 
             if (!isRunning) {
-                btnText.innerText = "연결 중...";
+                btnText.innerText = "권한 요청 중...";
                 btnIcon.className = "fa-solid fa-spinner fa-spin";
                 btnStart.disabled = true;
 
                 try {
+                    // [핵심] 버튼을 누르는 순간 웹사이트가 브라우저에 명시적으로 카메라 권한 팝업을 띄우도록 요청합니다.
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    
+                    // 권한을 얻은 후, 티처블 머신 캠 객체와 충돌나지 않도록 임시 스트림은 정리합니다.
+                    stream.getTracks().forEach(track => track.stop());
+
                     const URL = modelInput.endsWith("/") ? modelInput : modelInput + "/";
                     const modelURL = URL + "model.json";
                     const metadataURL = URL + "metadata.json";
 
-                    // 1. AI 모델 로드
+                    // AI 모델 로드
                     model = await tmPose.load(modelURL, metadataURL);
                     maxPredictions = model.getTotalClasses();
 
-                    // 2. 웹캠 인스턴스 생성 및 권한 요청 팝업 유도 (브라우저 내장 팝업)
                     const width = 640;
                     const height = 480;
                     const flip = true; 
                     webcam = new tmPose.Webcam(width, height, flip); 
-                    
-                    // setup() 호출 시 브라우저가 카메라 권한 허용 여부를 묻는 팝업을 띄웁니다.
-                    await webcam.setup(); 
+                    await webcam.setup(); // 웹캠 최종 연결
                     await webcam.play();
                     window.requestAnimationFrame(loop);
 
-                    // 3. UI 캔버스 활성화
                     const canvas = document.getElementById("canvas");
                     canvas.width = width;
                     canvas.height = height;
@@ -327,8 +329,8 @@
                     startTimer();
                     speakCoach("트레이닝을 시작합니다.");
                 } catch (err) {
-                    console.error("Camera/Model Error:", err);
-                    alert("카메라 권한이 거부되었거나 모델을 불러오지 못했습니다.\n브라우저 주소창 왼쪽의 자물쇠 아이콘을 눌러 카메라 권한을 허용해 주세요.");
+                    console.error("Camera Error:", err);
+                    alert("카메라 권한 요청이 거부되었거나 사용 중입니다.\n(참고: 브라우저 보안 정책상 반드시 로컬 서버나 웹 주소(http/https) 환경에서 실행해야 권한 창이 정상적으로 뜹니다.)");
                     btnText.innerText = "트레이닝 시작";
                     btnIcon.className = "fa-solid fa-video";
                     btnStart.disabled = false;
